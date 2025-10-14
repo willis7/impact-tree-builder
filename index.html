@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impact Tree Builder - Impact Intelligence</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Toolbar -->
+        <header class="toolbar">
+            <div class="toolbar-section">
+                <h1 class="app-title">Impact Tree Builder</h1>
+                <span class="subtitle">Impact Intelligence Visualization</span>
+            </div>
+            <div class="toolbar-actions">
+                <button class="btn btn--outline" id="newTreeBtn">New Tree</button>
+                <button class="btn btn--outline" id="saveBtn">Save</button>
+                <button class="btn btn--outline" id="loadBtn">Load</button>
+                <button class="btn btn--outline" id="exportBtn">Export JSON</button>
+                <button class="btn btn--primary" id="helpBtn">Help</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Sidebar -->
+            <aside class="sidebar sidebar-left">
+                <div class="sidebar-section">
+                    <h3>Tree Information</h3>
+                    <div class="tree-info">
+                        <input type="text" id="treeName" class="form-control" placeholder="Tree Name" value="Customer Support AI Chatbot">
+                        <textarea id="treeDescription" class="form-control" rows="3" placeholder="Description">Impact intelligence network for AI customer support chatbot initiative</textarea>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Add Nodes</h3>
+                    <div class="node-tools">
+                        <button class="tool-btn" data-node-type="business_metric">
+                            <div class="node-preview business-metric"></div>
+                            Business Metric
+                        </button>
+                        <button class="tool-btn" data-node-type="product_metric">
+                            <div class="node-preview product-metric"></div>
+                            Product Metric
+                        </button>
+                        <button class="tool-btn" data-node-type="initiative_positive">
+                            <div class="node-preview initiative-positive"></div>
+                            Positive Initiative
+                        </button>
+                        <button class="tool-btn" data-node-type="initiative_negative">
+                            <div class="node-preview initiative-negative"></div>
+                            Negative Initiative
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Relationship Tools</h3>
+                    <div class="relationship-tools">
+                        <button class="tool-btn" id="connectMode">
+                            <span class="relationship-preview desirable"></span>
+                            Connect Nodes
+                        </button>
+                        <div class="relationship-types">
+                            <label><input type="radio" name="relationshipType" value="desirable_effect" checked> Desirable Effect</label>
+                            <label><input type="radio" name="relationshipType" value="undesirable_effect"> Undesirable Effect</label>
+                            <label><input type="radio" name="relationshipType" value="rollup"> Rollup</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Canvas Controls</h3>
+                    <div class="canvas-controls">
+                        <button class="btn btn--sm" id="zoomIn">Zoom In</button>
+                        <button class="btn btn--sm" id="zoomOut">Zoom Out</button>
+                        <button class="btn btn--sm" id="resetView">Reset View</button>
+                        <button class="btn btn--sm" id="centerView">Center</button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Canvas Area -->
+            <main class="canvas-container">
+                <div class="canvas-wrapper">
+                    <svg id="impactCanvas" class="impact-canvas">
+                        <defs>
+                            <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#4CAF50" />
+                            </marker>
+                            <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#F44336" />
+                            </marker>
+                            <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#2196F3" />
+                            </marker>
+                        </defs>
+                        <g id="relationshipsGroup"></g>
+                        <g id="nodesGroup"></g>
+                    </svg>
+                    <div class="canvas-overlay">
+                        <div class="canvas-instructions" id="canvasInstructions">
+                            <p>👈 Select a node type from the left sidebar and click here to add it</p>
+                            <p>Click nodes to select them, drag to move, double-click to edit</p>
+                            <p>Use "Connect Nodes" mode to create relationships</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right Sidebar -->
+            <aside class="sidebar sidebar-right">
+                <div class="sidebar-section">
+                    <h3>Properties</h3>
+                    <div id="propertiesPanel">
+                        <div class="no-selection">
+                            <p>Select a node or relationship to view properties</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Measurements</h3>
+                    <div id="measurementsPanel">
+                        <div class="no-selection">
+                            <p>Select a node to add measurements</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Performance</h3>
+                    <div id="performancePanel">
+                        <div class="performance-summary">
+                            <div class="metric-card">
+                                <span class="metric-label">Total Nodes</span>
+                                <span class="metric-value" id="totalNodes">7</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">Relationships</span>
+                                <span class="metric-value" id="totalRelationships">7</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">Measured Nodes</span>
+                                <span class="metric-value" id="measuredNodes">4</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Modal for Node Editing -->
+    <div class="modal" id="nodeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Node</h3>
+                <button class="modal-close" id="closeNodeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" id="nodeName" class="form-control" placeholder="Node name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="nodeDescription" class="form-control" rows="3" placeholder="Node description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select id="nodeType" class="form-control">
+                        <option value="business_metric">Business Metric</option>
+                        <option value="product_metric">Product Metric</option>
+                        <option value="initiative_positive">Positive Initiative</option>
+                        <option value="initiative_negative">Negative Initiative</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--outline" id="deleteNode">Delete</button>
+                <button class="btn btn--secondary" id="cancelNodeEdit">Cancel</button>
+                <button class="btn btn--primary" id="saveNode">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Measurements -->
+    <div class="modal" id="measurementModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Measurement</h3>
+                <button class="modal-close" id="closeMeasurementModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Metric Name</label>
+                    <input type="text" id="metricName" class="form-control" placeholder="e.g., Sessions per Hour">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Expected Value</label>
+                    <input type="number" id="expectedValue" class="form-control" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Actual Value</label>
+                    <input type="number" id="actualValue" class="form-control" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Impact Type</label>
+                    <select id="impactType" class="form-control">
+                        <option value="proximate">Proximate</option>
+                        <option value="downstream">Downstream</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Measurement Period</label>
+                    <select id="measurementPeriod" class="form-control">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--secondary" id="cancelMeasurement">Cancel</button>
+                <button class="btn btn--primary" id="saveMeasurement">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
