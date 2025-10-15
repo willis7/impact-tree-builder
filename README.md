@@ -171,7 +171,7 @@ src/
 - **Zoom In/Out** - Use the + and - buttons (or mouse wheel)
 - **Reset View** - Return to default zoom and position
 - **Center View** - Center the canvas on all nodes
-- **Pan** - Click and drag empty canvas space
+- **Auto-Pan** - When dragging nodes near viewport edges, canvas automatically pans in that direction
 
 ### Keyboard Shortcuts Summary
 
