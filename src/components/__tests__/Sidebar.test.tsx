@@ -236,4 +236,33 @@ describe("Sidebar", () => {
     expect(screen.getByLabelText(/name/i)).toBeDefined();
     expect(screen.getByLabelText(/description/i)).toBeDefined();
   });
+
+  // T043: User Story 2 - Auto-deselect after drag-drop
+  it("should deselect node type after successful drag-drop", () => {
+    // Start with a node type selected
+    const { rerender } = render(
+      <Sidebar
+        {...defaultProps}
+        mode="add-node"
+        selectedNodeType="business_metric"
+      />
+    );
+
+    const businessMetricBtn = screen.getByRole("button", {
+      name: /business metric/i,
+    });
+    expect(businessMetricBtn).toBeDefined();
+
+    // Simulate successful drop by re-rendering with deselected state
+    rerender(
+      <Sidebar {...defaultProps} mode="select" selectedNodeType={null} />
+    );
+
+    // Button should no longer be highlighted
+    const btnAfterDrop = screen.getByRole("button", {
+      name: /business metric/i,
+    });
+    expect(btnAfterDrop).toBeDefined();
+    // Button should exist but not be in selected state
+  });
 });

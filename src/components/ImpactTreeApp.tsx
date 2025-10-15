@@ -259,6 +259,7 @@ export function ImpactTreeApp() {
     setNodes(new Map(nodes.set(nodeId, newNode)));
     setSelectedNodeId(nodeId);
     setMode("select");
+    setSelectedNodeType(null); // T047: Auto-deselect node type after placement
   };
 
   /**
@@ -315,6 +316,23 @@ export function ImpactTreeApp() {
     const targetNode = nodes.get(targetNodeId);
 
     if (sourceNode && targetNode) {
+      // FR-020: Prevent self-relationships
+      if (sourceNodeId === targetNodeId) {
+        console.warn("Cannot create relationship from node to itself");
+        return;
+      }
+
+      // FR-015: Check for duplicate relationships
+      const existingRel = Array.from(relationships.values()).find(
+        (rel) =>
+          rel.source_node_id === sourceNodeId &&
+          rel.target_node_id === targetNodeId
+      );
+      if (existingRel) {
+        console.warn("Relationship already exists");
+        return;
+      }
+
       // Determine relationship type based on initiative type
       let relationshipType:
         | "desirable_effect"
@@ -349,6 +367,10 @@ export function ImpactTreeApp() {
       setRelationships(
         new Map(relationships.set(newRelationship.id, newRelationship))
       );
+
+      // T082-T084: User Story 4 - Auto-deselect after relationship creation
+      setMode("select");
+      setConnectSourceNodeId(null);
     }
   };
 
