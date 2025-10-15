@@ -1,5 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   ZoomIn,
   ZoomOut,
@@ -191,129 +198,161 @@ export function ImpactTreeApp() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Toolbar */}
-      <header className="flex items-center justify-between px-6 py-3 border-b bg-card">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-primary">
-            Impact Tree Builder
-          </h1>
-          <span className="text-sm text-muted-foreground">
-            Impact Intelligence Visualization
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setNodes(new Map())}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
-            Save
-          </Button>
-          <Button variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
-            Load
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button variant="outline" size="sm">
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Help
-          </Button>
-        </div>
-      </header>
+      <TooltipProvider>
+        {/* Toolbar */}
+        <header className="flex items-center justify-between px-6 py-3 border-b bg-card">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+              Impact Tree Builder
+              <Badge variant="secondary">v2.0</Badge>
+            </h1>
+            <span className="text-sm text-muted-foreground">
+              Impact Intelligence Visualization
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNodes(new Map())}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Create a new impact tree</TooltipContent>
+            </Tooltip>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <Sidebar
-          tree={tree}
-          onTreeUpdate={setTree}
-          mode={mode}
-          onModeChange={setMode}
-          selectedNodeType={selectedNodeType}
-          onNodeTypeSelect={setSelectedNodeType}
-          nodes={nodes}
-          relationships={relationships}
-        />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={handleSave}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Save current tree to file</TooltipContent>
+            </Tooltip>
 
-        {/* Canvas */}
-        <main className="flex-1 relative">
-          <ImpactCanvas
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Load
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Load tree from file</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Export tree as JSON</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Help
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Show help and keyboard shortcuts</TooltipContent>
+            </Tooltip>
+          </div>
+        </header>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Sidebar */}
+          <Sidebar
+            tree={tree}
+            onTreeUpdate={setTree}
+            mode={mode}
+            onModeChange={setMode}
+            selectedNodeType={selectedNodeType}
+            onNodeTypeSelect={setSelectedNodeType}
             nodes={nodes}
             relationships={relationships}
-            measurements={measurements}
-            selectedNodeId={selectedNodeId}
-            selectedRelationshipId={selectedRelationshipId}
-            onNodeSelect={setSelectedNodeId}
-            onRelationshipSelect={setSelectedRelationshipId}
-            onNodeMove={handleUpdateNode}
-            onAddNode={handleAddNode}
-            mode={mode}
-            viewBox={viewBox}
           />
 
-          {/* Canvas Controls */}
-          <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => handleZoom(1.2)}
-              className="shadow-lg"
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => handleZoom(0.8)}
-              className="shadow-lg"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleResetView}
-              className="shadow-lg"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleCenterView}
-              className="shadow-lg"
-            >
-              <Move className="h-4 w-4" />
-            </Button>
-          </div>
-        </main>
+          {/* Canvas */}
+          <main className="flex-1 relative">
+            <ImpactCanvas
+              nodes={nodes}
+              relationships={relationships}
+              measurements={measurements}
+              selectedNodeId={selectedNodeId}
+              selectedRelationshipId={selectedRelationshipId}
+              onNodeSelect={setSelectedNodeId}
+              onRelationshipSelect={setSelectedRelationshipId}
+              onNodeMove={handleUpdateNode}
+              onAddNode={handleAddNode}
+              mode={mode}
+              viewBox={viewBox}
+            />
 
-        {/* Right Panel */}
-        <PropertiesPanel
-          selectedNode={selectedNodeId ? nodes.get(selectedNodeId) : null}
-          selectedRelationship={
-            selectedRelationshipId
-              ? relationships.get(selectedRelationshipId)
-              : null
-          }
-          measurements={measurements}
-          nodes={nodes}
-          onUpdateNode={handleUpdateNode}
-          onDeleteNode={handleDeleteNode}
-          onAddMeasurement={(measurement: Measurement) => {
-            setMeasurements(
-              new Map(measurements.set(measurement.id, measurement))
-            );
-          }}
-        />
-      </div>
+            {/* Canvas Controls */}
+            <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={() => handleZoom(1.2)}
+                className="shadow-lg"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={() => handleZoom(0.8)}
+                className="shadow-lg"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={handleResetView}
+                className="shadow-lg"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={handleCenterView}
+                className="shadow-lg"
+              >
+                <Move className="h-4 w-4" />
+              </Button>
+            </div>
+          </main>
+
+          {/* Right Panel */}
+          <PropertiesPanel
+            selectedNode={selectedNodeId ? nodes.get(selectedNodeId) : null}
+            selectedRelationship={
+              selectedRelationshipId
+                ? relationships.get(selectedRelationshipId)
+                : null
+            }
+            measurements={measurements}
+            nodes={nodes}
+            onUpdateNode={handleUpdateNode}
+            onDeleteNode={handleDeleteNode}
+            onAddMeasurement={(measurement: Measurement) => {
+              setMeasurements(
+                new Map(measurements.set(measurement.id, measurement))
+              );
+            }}
+          />
+        </div>
+      </TooltipProvider>
     </div>
   );
 }
