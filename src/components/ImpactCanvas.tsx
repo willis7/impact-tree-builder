@@ -194,6 +194,40 @@ export function ImpactCanvas({
           </marker>
         </defs>
 
+        {/* Background */}
+        <rect
+          x={viewBox.x}
+          y={viewBox.y}
+          width={viewBox.width / viewBox.scale}
+          height={viewBox.height / viewBox.scale}
+          className="fill-muted/10"
+        />
+
+        {/* Grid pattern for better visual reference */}
+        <defs>
+          <pattern
+            id="grid"
+            width="50"
+            height="50"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 50 0 L 0 0 0 50"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="0.5"
+              className="stroke-muted/20"
+            />
+          </pattern>
+        </defs>
+        <rect
+          x={viewBox.x}
+          y={viewBox.y}
+          width={viewBox.width / viewBox.scale}
+          height={viewBox.height / viewBox.scale}
+          fill="url(#grid)"
+        />
+
         {/* Relationships */}
         <g>
           {Array.from(relationships.values()).map((rel) => {

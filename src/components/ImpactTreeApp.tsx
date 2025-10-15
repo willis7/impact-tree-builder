@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
@@ -18,6 +19,7 @@ import {
   HelpCircle,
   Plus,
 } from "lucide-react";
+import { ThemeToggle } from "./theme-toggle";
 import { ImpactCanvas } from "./ImpactCanvas";
 import { Sidebar } from "./Sidebar";
 import { PropertiesPanel } from "./PropertiesPanel";
@@ -264,6 +266,17 @@ export function ImpactTreeApp() {
               </TooltipTrigger>
               <TooltipContent>Show help and keyboard shortcuts</TooltipContent>
             </Tooltip>
+
+            <Separator orientation="vertical" className="h-8" />
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <ThemeToggle />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Toggle theme</TooltipContent>
+            </Tooltip>
           </div>
         </header>
 
@@ -281,7 +294,7 @@ export function ImpactTreeApp() {
           />
 
           {/* Canvas */}
-          <main className="flex-1 relative">
+          <main className="flex-1 relative bg-muted/20 border-x">
             <ImpactCanvas
               nodes={nodes}
               relationships={relationships}
