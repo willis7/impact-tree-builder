@@ -28,7 +28,7 @@ import { sampleData } from "@/data/sampleData";
 
 /**
  * Main Impact Tree application component
- * 
+ *
  * Manages the complete state and interactions for the impact tree visualization:
  * - Tree metadata (name, description, dates)
  * - Nodes (metrics and initiatives) with positions and properties
@@ -37,12 +37,12 @@ import { sampleData } from "@/data/sampleData";
  * - Canvas view controls (zoom, pan, center)
  * - Interaction modes (select, add nodes, create relationships)
  * - File operations (save, load, export)
- * 
+ *
  * The component coordinates three main sections:
  * 1. Sidebar - tree info, node tools, relationship tools, statistics
  * 2. Canvas - visual representation and interaction area
  * 3. Properties Panel - detailed editing of selected items
- * 
+ *
  * @returns The complete impact tree application UI
  */
 export function ImpactTreeApp() {
@@ -132,8 +132,6 @@ export function ImpactTreeApp() {
    * Downloads a file containing all tree data for backup or sharing
    */
   const handleExport = () => {
-
-  const handleExport = () => {
     const data = {
       tree,
       nodes: Array.from(nodes.values()),
@@ -151,9 +149,6 @@ export function ImpactTreeApp() {
     link.click();
 
     URL.revokeObjectURL(url);
-  };
-
-  a.click();
   };
 
   /**
@@ -211,9 +206,7 @@ export function ImpactTreeApp() {
 
     setNodes(new Map(nodes.set(nodeId, newNode)));
     setSelectedNodeId(nodeId);
-  };
-
-  setMode("select");
+    setMode("select");
   };
 
   /**
