@@ -16,17 +16,42 @@ import { Link2 } from "lucide-react";
 import type { ImpactTree, Node, Relationship } from "@/types";
 import { sanitizeInput, sanitizeDescription } from "@/lib/sanitize";
 
+/**
+ * Props for the Sidebar component
+ */
 interface SidebarProps {
+  /** The current impact tree data */
   tree: ImpactTree;
+  /** Callback to update tree information (name, description) */
   onTreeUpdate: (tree: ImpactTree) => void;
+  /** Current interaction mode: select (default), add-node, or connect (relationship) */
   mode: "select" | "add-node" | "connect";
+  /** Callback to change the interaction mode */
   onModeChange: (mode: "select" | "add-node" | "connect") => void;
+  /** Currently selected node type for adding (business_metric, product_metric, initiative) */
   selectedNodeType: string | null;
+  /** Callback when a node type is selected */
   onNodeTypeSelect: (type: string) => void;
+  /** Map of all nodes in the tree by ID */
   nodes: Map<string, Node>;
+  /** Map of all relationships in the tree by ID */
   relationships: Map<string, Relationship>;
 }
 
+/**
+ * Sidebar component for impact tree management
+ *
+ * Provides controls for:
+ * - Editing tree information (name and description)
+ * - Adding nodes by type (Business Metric, Product Metric, Initiative)
+ * - Managing relationships between nodes
+ * - Viewing tree statistics (node counts, relationship counts, measurement coverage)
+ *
+ * All user inputs are sanitized to prevent XSS attacks using DOMPurify.
+ *
+ * @param props - Component props
+ * @returns The sidebar UI element
+ */
 export function Sidebar({
   tree,
   onTreeUpdate,
@@ -37,11 +62,17 @@ export function Sidebar({
   nodes,
   relationships,
 }: SidebarProps) {
+  /**
+   * Handles node type button clicks
+   * Activates add-node mode with the selected type
+   * @param type - The node type identifier (business_metric, product_metric, initiative)
+   */
   const handleNodeTypeClick = (type: string) => {
     onNodeTypeSelect(type);
     onModeChange("add-node");
   };
 
+  // Track which nodes have measurements for statistics
   const measuredNodes = new Set();
 
   return (

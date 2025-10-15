@@ -31,16 +31,42 @@ import {
   sanitizeNumericInput,
 } from "@/lib/sanitize";
 
+/**
+ * Props for the PropertiesPanel component
+ */
 interface PropertiesPanelProps {
+  /** Currently selected node to display/edit properties */
   selectedNode: Node | null | undefined;
+  /** Currently selected relationship to display information */
   selectedRelationship: Relationship | null | undefined;
+  /** Map of all measurements in the tree by ID */
   measurements: Map<string, Measurement>;
+  /** Map of all nodes in the tree by ID (for relationship lookups) */
   nodes: Map<string, Node>;
+  /** Callback to update node properties */
   onUpdateNode: (nodeId: string, updates: Partial<Node>) => void;
+  /** Callback to delete a node */
   onDeleteNode: (nodeId: string) => void;
+  /** Callback to add a new measurement */
   onAddMeasurement: (measurement: Measurement) => void;
 }
 
+/**
+ * Properties panel component for editing nodes and measurements
+ *
+ * Provides functionality for:
+ * - Viewing and editing node properties (name, description, type)
+ * - Managing measurements for nodes (add, view performance)
+ * - Viewing relationship information
+ * - Calculating and displaying measurement performance indicators
+ *
+ * Features edit mode with save/cancel for node properties.
+ * All user inputs are sanitized to prevent XSS attacks.
+ * Performance badges show green (≥80%) or red (<80%) based on actual vs expected values.
+ *
+ * @param props - Component props
+ * @returns The properties panel UI element
+ */
 export function PropertiesPanel({
   selectedNode,
   selectedRelationship,
@@ -67,6 +93,11 @@ export function PropertiesPanel({
       )
     : [];
 
+  /**
+   * Converts node type identifier to human-readable label
+   * @param type - Node type identifier (business_metric, product_metric, initiative)
+   * @returns Human-readable label
+   */
   const getNodeTypeLabel = (type: string) => {
     switch (type) {
       case "business_metric":
@@ -80,11 +111,21 @@ export function PropertiesPanel({
     }
   };
 
+  /**
+   * Calculates measurement performance as ratio of actual to expected value
+   * Used to determine badge color (green if ≥0.8, red otherwise)
+   * @param measurement - The measurement to calculate performance for
+   * @returns Performance ratio (0 if expected_value is 0, otherwise actual/expected)
+   */
   const calculateMeasurementPerformance = (measurement: Measurement) => {
     if (measurement.expected_value === 0) return 0;
     return Math.abs(measurement.actual_value / measurement.expected_value);
   };
 
+  /**
+   * Saves edited node properties and exits edit mode
+   * Updates the node via onUpdateNode callback
+   */
   const handleSaveNode = () => {
     if (selectedNode && editedNode) {
       onUpdateNode(selectedNode.id, editedNode);
@@ -93,6 +134,11 @@ export function PropertiesPanel({
     }
   };
 
+  /**
+   * Adds a new measurement for the selected node
+   * Creates measurement with current date and sanitized inputs
+   * Resets the form and closes the dialog after adding
+   */
   const handleAddMeasurement = () => {
     if (!selectedNode) return;
 

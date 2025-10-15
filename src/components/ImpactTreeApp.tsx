@@ -26,6 +26,25 @@ import { PropertiesPanel } from "./PropertiesPanel";
 import type { ImpactTree, Node, Relationship, Measurement } from "@/types";
 import { sampleData } from "@/data/sampleData";
 
+/**
+ * Main Impact Tree application component
+ * 
+ * Manages the complete state and interactions for the impact tree visualization:
+ * - Tree metadata (name, description, dates)
+ * - Nodes (metrics and initiatives) with positions and properties
+ * - Relationships (links between nodes showing impact flow)
+ * - Measurements (data points tracking node performance)
+ * - Canvas view controls (zoom, pan, center)
+ * - Interaction modes (select, add nodes, create relationships)
+ * - File operations (save, load, export)
+ * 
+ * The component coordinates three main sections:
+ * 1. Sidebar - tree info, node tools, relationship tools, statistics
+ * 2. Canvas - visual representation and interaction area
+ * 3. Properties Panel - detailed editing of selected items
+ * 
+ * @returns The complete impact tree application UI
+ */
 export function ImpactTreeApp() {
   const [tree, setTree] = useState<ImpactTree>(sampleData.tree);
   const [nodes, setNodes] = useState<Map<string, Node>>(
@@ -52,6 +71,10 @@ export function ImpactTreeApp() {
     scale: 1,
   });
 
+  /**
+   * Adjusts the canvas zoom level
+   * @param factor - Multiplier for the current scale (e.g., 1.2 to zoom in, 0.8 to zoom out)
+   */
   const handleZoom = (factor: number) => {
     setViewBox((prev) => ({
       ...prev,
@@ -59,10 +82,17 @@ export function ImpactTreeApp() {
     }));
   };
 
+  /**
+   * Resets the canvas view to default position and zoom
+   */
   const handleResetView = () => {
     setViewBox({ x: 0, y: 0, width: 1200, height: 800, scale: 1 });
   };
 
+  /**
+   * Centers the view on all nodes in the tree
+   * Calculates the bounding box of all nodes and centers the viewBox
+   */
   const handleCenterView = () => {
     if (nodes.size === 0) return;
 
@@ -82,6 +112,10 @@ export function ImpactTreeApp() {
     }));
   };
 
+  /**
+   * Saves the current tree state to localStorage
+   * Includes tree metadata, nodes, relationships, and measurements
+   */
   const handleSave = () => {
     const data = {
       tree,
@@ -90,8 +124,14 @@ export function ImpactTreeApp() {
       measurements: Array.from(measurements.values()),
     };
     localStorage.setItem("impactTreeData", JSON.stringify(data));
-    alert("Tree saved successfully!");
+    alert("Tree saved!");
   };
+
+  /**
+   * Exports the tree as a JSON file
+   * Downloads a file containing all tree data for backup or sharing
+   */
+  const handleExport = () => {
 
   const handleExport = () => {
     const data = {
@@ -113,6 +153,15 @@ export function ImpactTreeApp() {
     URL.revokeObjectURL(url);
   };
 
+  a.click();
+  };
+
+  /**
+   * Adds a new node to the tree at the specified canvas coordinates
+   * Automatically assigns color and shape based on node type
+   * @param x - Canvas X coordinate for node position
+   * @param y - Canvas Y coordinate for node position
+   */
   const handleAddNode = (x: number, y: number) => {
     if (!selectedNodeType) return;
 
@@ -164,6 +213,14 @@ export function ImpactTreeApp() {
     setSelectedNodeId(nodeId);
   };
 
+  setMode("select");
+  };
+
+  /**
+   * Updates properties of an existing node
+   * @param nodeId - ID of the node to update
+   * @param updates - Partial node object with properties to update
+   */
   const handleUpdateNode = (nodeId: string, updates: Partial<Node>) => {
     const node = nodes.get(nodeId);
     if (!node) return;
