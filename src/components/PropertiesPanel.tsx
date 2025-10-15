@@ -24,6 +24,12 @@ import {
 } from "@/components/ui/dialog";
 import type { Node, Relationship, Measurement } from "@/types";
 import { Trash2, Edit, Plus } from "lucide-react";
+import {
+  sanitizeNodeName,
+  sanitizeDescription,
+  sanitizeMeasurementText,
+  sanitizeNumericInput,
+} from "@/lib/sanitize";
 
 interface PropertiesPanelProps {
   selectedNode: Node | null | undefined;
@@ -146,7 +152,10 @@ export function PropertiesPanel({
                     id="nodeName"
                     value={editedNode.name || ""}
                     onChange={(e) =>
-                      setEditedNode({ ...editedNode, name: e.target.value })
+                      setEditedNode({
+                        ...editedNode,
+                        name: sanitizeNodeName(e.target.value),
+                      })
                     }
                     className="mt-1"
                   />
@@ -161,7 +170,7 @@ export function PropertiesPanel({
                     onChange={(e) =>
                       setEditedNode({
                         ...editedNode,
-                        description: e.target.value,
+                        description: sanitizeDescription(e.target.value),
                       })
                     }
                     rows={3}
@@ -310,7 +319,7 @@ export function PropertiesPanel({
                     onChange={(e) =>
                       setNewMeasurement({
                         ...newMeasurement,
-                        metric_name: e.target.value,
+                        metric_name: sanitizeMeasurementText(e.target.value),
                       })
                     }
                     placeholder="e.g., Sessions per Hour"
@@ -326,7 +335,10 @@ export function PropertiesPanel({
                       onChange={(e) =>
                         setNewMeasurement({
                           ...newMeasurement,
-                          expected_value: parseFloat(e.target.value),
+                          expected_value: sanitizeNumericInput(
+                            e.target.value,
+                            0
+                          ),
                         })
                       }
                     />
@@ -340,7 +352,7 @@ export function PropertiesPanel({
                       onChange={(e) =>
                         setNewMeasurement({
                           ...newMeasurement,
-                          actual_value: parseFloat(e.target.value),
+                          actual_value: sanitizeNumericInput(e.target.value, 0),
                         })
                       }
                     />

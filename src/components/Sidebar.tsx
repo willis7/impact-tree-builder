@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Link2 } from "lucide-react";
 import type { ImpactTree, Node, Relationship } from "@/types";
+import { sanitizeInput, sanitizeDescription } from "@/lib/sanitize";
 
 interface SidebarProps {
   tree: ImpactTree;
@@ -62,7 +63,10 @@ export function Sidebar({
                   id="treeName"
                   value={tree.name}
                   onChange={(e) =>
-                    onTreeUpdate({ ...tree, name: e.target.value })
+                    onTreeUpdate({
+                      ...tree,
+                      name: sanitizeInput(e.target.value),
+                    })
                   }
                   className="mt-1"
                 />
@@ -75,7 +79,10 @@ export function Sidebar({
                   id="treeDescription"
                   value={tree.description}
                   onChange={(e) =>
-                    onTreeUpdate({ ...tree, description: e.target.value })
+                    onTreeUpdate({
+                      ...tree,
+                      description: sanitizeDescription(e.target.value),
+                    })
                   }
                   rows={3}
                   className="mt-1"
