@@ -9,6 +9,7 @@ import {
 } from "@dnd-kit/core";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
 import { useDragNode } from "@/hooks/useDragNode";
+import { useCanvasAutoPan } from "@/hooks/useCanvasAutoPan";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -93,6 +94,20 @@ export function ImpactTreeApp() {
   // Track real-time mouse position for accurate drop coordinates
   const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  // Track the last processed drag event to prevent duplicates
+  const lastDragIdRef = useRef<string | null>(null);
+
+  // Track when last drag ended to prevent click events from firing immediately after
+  const lastDragEndTimeRef = useRef<number>(0);
+
+  // Track last created node to prevent exact duplicates
+  const lastCreatedNodeRef = useRef<{
+    x: number;
+    y: number;
+    type: string;
+    timestamp: number;
+  } | null>(null);
+
   // Update mouse position on every move
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -109,6 +124,100 @@ export function ImpactTreeApp() {
       handleAddNode(position.x, position.y, nodeType);
     },
   });
+
+  // Auto-pan when dragging near viewport edges
+  useCanvasAutoPan({
+    canvasElement,
+    isDragging: dragState.isDragging,
+    cursorPositionRef: mousePositionRef,
+    onPan: (deltaX, deltaY) => {
+      setViewBox((prev) => ({
+        ...prev,
+        x: prev.x + deltaX,
+        y: prev.y + deltaY,
+      }));
+    },
+    viewBox,
+  });
+
+  // T109-T118: Keyboard shortcuts for node types and modes
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in input fields
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      // T116: Escape key - cancel current operation
+      if (e.key === "Escape") {
+        if (dragState.isDragging) {
+          cancelDrag();
+        } else if (mode === "connect") {
+          setMode("select");
+          setConnectSourceNodeId(null);
+        } else if (mode === "add-node") {
+          setMode("select");
+          setSelectedNodeType(null);
+        }
+        return;
+      }
+
+      // T110: 'b' key - Business Metric
+      if (e.key === "b" || e.key === "B") {
+        setSelectedNodeType("business_metric");
+        setMode("add-node");
+        e.preventDefault();
+        return;
+      }
+
+      // T111: 'p' key - Product Metric
+      if (e.key === "p" || e.key === "P") {
+        setSelectedNodeType("product_metric");
+        setMode("add-node");
+        e.preventDefault();
+        return;
+      }
+
+      // T112: 'i' key - Initiative (positive)
+      if (e.key === "i" || e.key === "I") {
+        setSelectedNodeType("initiative_positive");
+        setMode("add-node");
+        e.preventDefault();
+        return;
+      }
+
+      // T113: 'n' key - Initiative (negative)
+      if (e.key === "n" || e.key === "N") {
+        setSelectedNodeType("initiative_negative");
+        setMode("add-node");
+        e.preventDefault();
+        return;
+      }
+
+      // T117: 'c' key - Connect Nodes mode
+      if (e.key === "c" || e.key === "C") {
+        setMode("connect");
+        setSelectedNodeType(null);
+        e.preventDefault();
+        return;
+      }
+
+      // T118: 's' key - Select mode
+      if (e.key === "s" || e.key === "S") {
+        setMode("select");
+        setSelectedNodeType(null);
+        setConnectSourceNodeId(null);
+        e.preventDefault();
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [dragState.isDragging, mode, cancelDrag]);
 
   // Configure drag sensors for @dnd-kit
   const mouseSensor = useSensor(MouseSensor, {
@@ -210,7 +319,45 @@ export function ImpactTreeApp() {
     const typeToUse = nodeType || selectedNodeType;
     if (!typeToUse) return;
 
+    // Check for duplicate node creation (same position, type, within 500ms)
+    const now = Date.now();
+    if (lastCreatedNodeRef.current) {
+      const timeDiff = now - lastCreatedNodeRef.current.timestamp;
+      const xDiff = Math.abs(x - lastCreatedNodeRef.current.x);
+      const yDiff = Math.abs(y - lastCreatedNodeRef.current.y);
+      const isSameType = typeToUse === lastCreatedNodeRef.current.type;
+
+      // If node is at nearly same position (within 5 units) and same type within 500ms, it's a duplicate
+      if (timeDiff < 500 && xDiff < 5 && yDiff < 5 && isSameType) {
+        console.log("🚫 Prevented duplicate node creation", {
+          timeDiff,
+          xDiff,
+          yDiff,
+          typeToUse,
+        });
+        return;
+      }
+    }
+
     const nodeId = "node_" + Date.now();
+
+    console.log("🔵 handleAddNode called", {
+      nodeId,
+      x,
+      y,
+      typeToUse,
+      timestamp: now,
+      stackTrace: new Error().stack?.split("\\n").slice(1, 4).join("\\n"),
+    });
+
+    // Record this node creation
+    lastCreatedNodeRef.current = {
+      x,
+      y,
+      type: typeToUse,
+      timestamp: now,
+    };
+
     let color, shape, level;
 
     switch (typeToUse) {
@@ -438,11 +585,15 @@ export function ImpactTreeApp() {
   };
 
   /**
-   * Handles the start of a drag operation
+   * Handles drag start event from DndContext
    * Initiates drag with useDragNode hook
    */
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
+
+    // Reset the last drag ID for new drag operation
+    lastDragIdRef.current = null;
+
     if (active?.data?.current?.nodeType) {
       const nodeType = active.data.current.nodeType as NodeType;
       // Start drag with initial cursor position (will be updated by DndContext)
@@ -457,9 +608,21 @@ export function ImpactTreeApp() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { over, active, delta, activatorEvent } = event;
 
+    // Create a unique ID for this drag event to prevent duplicate processing
+    const dragEventId = `${active.id}-${Date.now()}`;
+
+    // Check if we've already processed this exact drag event
+    if (lastDragIdRef.current === dragEventId) {
+      console.log("Skipping duplicate handleDragEnd call");
+      return;
+    }
+
+    lastDragIdRef.current = dragEventId;
+
     console.log("handleDragEnd called", {
       over: over?.id,
       isDragging: dragState.isDragging,
+      dragEventId,
     });
     console.log("Full event:", { active, delta, activatorEvent, over });
 
@@ -561,9 +724,12 @@ export function ImpactTreeApp() {
       }
 
       endDrag({ x: canvasX, y: canvasY });
+      // Set timestamp to prevent click events immediately after drag
+      lastDragEndTimeRef.current = Date.now();
     } else {
       // Cancelled - dropped outside canvas
       endDrag(null);
+      lastDragEndTimeRef.current = Date.now();
     }
   };
 
@@ -734,6 +900,7 @@ export function ImpactTreeApp() {
                 onNodeClickForConnect={handleNodeClickForConnect}
                 connectSourceNodeId={connectSourceNodeId}
                 isDraggingNode={dragState.isDragging}
+                lastDragEndTime={lastDragEndTimeRef.current}
                 onCreateRelationship={handleCreateRelationshipDirect}
               />{" "}
               {/* Canvas Controls */}
@@ -802,8 +969,11 @@ export function ImpactTreeApp() {
       {/* Drag Overlay for node preview during drag */}
       <DragOverlay dropAnimation={null}>
         {dragState.isDragging && dragState.activeNodeType ? (
-          <div className="opacity-60 cursor-grabbing">
-            <Badge variant={getNodeTypeVariant(dragState.activeNodeType)}>
+          <div className="opacity-70 cursor-grabbing animate-pulse">
+            <Badge
+              variant={getNodeTypeVariant(dragState.activeNodeType)}
+              className="shadow-lg transition-transform duration-150"
+            >
               {getNodeTypeLabel(dragState.activeNodeType)}
             </Badge>
           </div>

@@ -77,9 +77,17 @@ export function useDragNode(options: {
    */
   const endDrag = (dropPosition: Position | null): void => {
     setDragState((prev) => {
-      if (prev.isDragging && dropPosition && prev.activeNodeType) {
+      // Guard against multiple calls - only process if currently dragging
+      if (!prev.isDragging) {
+        return prev;
+      }
+
+      // Create node if we have a valid drop position and node type
+      if (dropPosition && prev.activeNodeType) {
         onNodeCreate(prev.activeNodeType, dropPosition);
       }
+
+      // Reset to initial state
       return INITIAL_DRAG_STATE;
     });
   };

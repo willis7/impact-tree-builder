@@ -89,7 +89,11 @@ function DraggableNodeButton({
         <Button
           ref={setNodeRef}
           variant={isSelected ? "default" : "outline"}
-          className={`w-full justify-start ${isDragging ? "opacity-50" : ""}`}
+          className={`w-full justify-start transition-all duration-200 ${
+            isDragging
+              ? "opacity-50 cursor-grabbing"
+              : "cursor-grab hover:scale-[1.02]"
+          }`}
           onClick={onClick}
           {...listeners}
           {...attributes}

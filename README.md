@@ -113,19 +113,51 @@ src/
 
 ### Adding Nodes
 
+**Method 1: Click to Add**
+
 1. Select a node type from the left sidebar (Business Metric, Product Metric, or Initiative)
 2. Click anywhere on the canvas to place the node
 3. Edit the node properties in the right panel
 
+**Method 2: Drag and Drop** ✨ NEW
+
+1. Drag a node type button from the left sidebar
+2. Drop it onto the canvas at your desired location
+3. The node is created instantly where you drop it
+
+**Keyboard Shortcuts:**
+
+- `B` - Select Business Metric
+- `P` - Select Product Metric
+- `I` - Select Initiative (Positive)
+- `N` - Select Initiative (Negative)
+- `Escape` - Cancel current operation
+
 ### Creating Relationships
 
-1. Click "Connect Nodes" in the left sidebar
+**Method 1: Click to Connect**
+
+1. Click "Connect Nodes" in the left sidebar (or press `C`)
 2. Select the relationship type (Desirable Effect, Undesirable Effect, or Rollup)
 3. Click on two nodes to create a relationship
+
+**Method 2: Drag to Connect** ✨ NEW
+
+1. Click "Connect Nodes" in the left sidebar (or press `C`)
+2. Drag from a source node to a target node
+3. A preview line shows during the drag (orange → green when hovering target)
+4. Release to create the relationship
+
+**Keyboard Shortcuts:**
+
+- `C` - Enter Connect Nodes mode
+- `S` - Return to Select mode
+- `Escape` - Cancel relationship creation
 
 ### Moving Nodes
 
 - Simply drag and drop nodes to reposition them on the canvas
+- Auto-pan: When dragging near the viewport edge, the canvas automatically pans
 
 ### Adding Measurements
 
@@ -136,9 +168,21 @@ src/
 
 ### Canvas Controls
 
-- **Zoom In/Out** - Use the + and - buttons
+- **Zoom In/Out** - Use the + and - buttons (or mouse wheel)
 - **Reset View** - Return to default zoom and position
 - **Center View** - Center the canvas on all nodes
+- **Pan** - Click and drag empty canvas space
+
+### Keyboard Shortcuts Summary
+
+| Key      | Action                     |
+| -------- | -------------------------- |
+| `B`      | Business Metric mode       |
+| `P`      | Product Metric mode        |
+| `I`      | Initiative (Positive) mode |
+| `N`      | Initiative (Negative) mode |
+| `C`      | Connect Nodes mode         |
+| `Escape` | Cancel current operation   |
 
 ### Saving and Exporting
 

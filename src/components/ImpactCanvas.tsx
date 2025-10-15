@@ -24,6 +24,7 @@ interface ImpactCanvasProps {
   onNodeClickForConnect?: (nodeId: string) => void;
   connectSourceNodeId?: string | null;
   isDraggingNode?: boolean;
+  lastDragEndTime?: number;
   onCreateRelationship?: (sourceNodeId: string, targetNodeId: string) => void;
 }
 
@@ -43,6 +44,7 @@ export function ImpactCanvas({
   onNodeClickForConnect,
   connectSourceNodeId,
   isDraggingNode,
+  lastDragEndTime = 0,
   onCreateRelationship,
 }: ImpactCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -80,6 +82,15 @@ export function ImpactCanvas({
     // Prevent click from firing if a node drag just completed
     // (drag drop triggers both drag end AND click, causing duplicates)
     if (isDraggingNode) return;
+
+    // Prevent clicks within 150ms of drag ending (cooldown period)
+    const timeSinceDragEnd = Date.now() - lastDragEndTime;
+    if (timeSinceDragEnd < 150) {
+      console.log("Ignoring click during cooldown period", {
+        timeSinceDragEnd,
+      });
+      return;
+    }
 
     // Try using SVG's native coordinate transformation
     let x, y;
@@ -286,7 +297,15 @@ export function ImpactCanvas({
           setNodeRef(node as unknown as HTMLElement);
           onCanvasReady?.(node);
         }}
-        className="w-full h-full cursor-crosshair"
+        className={`w-full h-full transition-colors duration-150 ${
+          mode === "connect" && connectDragState.isDragging
+            ? "cursor-crosshair"
+            : mode === "connect"
+            ? "cursor-pointer"
+            : mode === "add-node"
+            ? "cursor-copy"
+            : "cursor-default"
+        }`}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width / viewBox.scale} ${
           viewBox.height / viewBox.scale
         }`}
@@ -456,7 +475,12 @@ export function ImpactCanvas({
                 key={node.id}
                 data-node-id={node.id}
                 transform={`translate(${node.position_x}, ${node.position_y})`}
-                className="cursor-pointer transition-all"
+                className={`cursor-pointer transition-all duration-200 ${
+                  connectDragState.isDragging &&
+                  connectDragState.hoveredNodeId === node.id
+                    ? "animate-pulse"
+                    : ""
+                }`}
                 onMouseDown={(e) => handleMouseDown(e, node.id)}
               >
                 {node.shape === "ellipse" ? (
