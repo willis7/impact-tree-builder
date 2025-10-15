@@ -366,6 +366,7 @@ export function ImpactTreeApp() {
                 size="icon"
                 onClick={() => handleZoom(1.2)}
                 className="shadow-lg"
+                aria-label="Zoom in"
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>
@@ -374,6 +375,7 @@ export function ImpactTreeApp() {
                 size="icon"
                 onClick={() => handleZoom(0.8)}
                 className="shadow-lg"
+                aria-label="Zoom out"
               >
                 <ZoomOut className="h-4 w-4" />
               </Button>
@@ -382,6 +384,7 @@ export function ImpactTreeApp() {
                 size="icon"
                 onClick={handleResetView}
                 className="shadow-lg"
+                aria-label="Reset view"
               >
                 <Maximize2 className="h-4 w-4" />
               </Button>
@@ -390,6 +393,7 @@ export function ImpactTreeApp() {
                 size="icon"
                 onClick={handleCenterView}
                 className="shadow-lg"
+                aria-label="Center view on all nodes"
               >
                 <Move className="h-4 w-4" />
               </Button>

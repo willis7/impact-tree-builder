@@ -63,7 +63,49 @@ Sync Impact Report:
 
 **Rationale**: Component-first architecture promotes modularity, testability, maintainability, and enables parallel development while preventing coupling and technical debt.
 
-### III. Type Safety (NON-NEGOTIABLE)
+### III. shadcn/ui Component Library (NON-NEGOTIABLE)
+
+**All UI components MUST use shadcn/ui as the foundation.** The shadcn/ui library is the mandatory component system for consistency, accessibility, and maintainability:
+
+- **Primary source**: All interactive UI elements must come from shadcn/ui registry
+- **No custom alternatives**: Do not create custom implementations of components available in shadcn/ui
+- **Extension only**: Custom UI components must extend or compose shadcn/ui components
+- **Design system adherence**: Apply branding via shadcn/ui theming and CSS variables
+- **Component registry**: All reusable UI elements must be registered and documented
+
+**shadcn/ui Standards**:
+
+- Use shadcn/ui CLI to add new components: `npx shadcn-ui@latest add [component]`
+- Customize via `components.json` configuration and theme variables
+- Extend components by wrapping or composing, never by forking
+- Follow shadcn/ui's composition patterns (e.g., Dialog + DialogContent + DialogHeader)
+- Leverage built-in accessibility features (ARIA, keyboard navigation)
+- Use shadcn/ui's variant system for component states and styles
+
+**Approved Component Usage**:
+
+- ✅ **Import from shadcn/ui**: `@/components/ui/*`
+- ✅ **Compose shadcn components**: Create feature components using shadcn/ui primitives
+- ✅ **Extend with props**: Add custom props while maintaining shadcn/ui API
+- ✅ **Theme customization**: Modify CSS variables in `globals.css`
+- ❌ **Custom UI from scratch**: Do not create buttons, inputs, dialogs, etc. manually
+- ❌ **Fork shadcn components**: Do not copy and modify shadcn/ui component source
+- ❌ **Alternative UI libraries**: Do not add Material-UI, Ant Design, Chakra, etc.
+
+**Deviation Process**:
+
+If shadcn/ui lacks required functionality:
+
+1. **Verify**: Confirm component doesn't exist in shadcn/ui registry
+2. **Check primitives**: Evaluate if Radix UI primitives can be used (shadcn/ui's foundation)
+3. **Document justification**: Explain why shadcn/ui cannot meet the requirement
+4. **Architecture approval**: Obtain explicit approval from architecture lead
+5. **Accessibility parity**: Ensure custom component meets WCAG 2.1 AA standards
+6. **Future migration**: Document plan to migrate to shadcn/ui when available
+
+**Rationale**: Standardizing on shadcn/ui ensures consistent UX, reduces maintenance burden, leverages battle-tested accessibility features, maintains design system coherence, and prevents component library fragmentation.
+
+### IV. Type Safety (NON-NEGOTIABLE)
 
 **TypeScript strict mode is mandatory.** All components, functions, and data structures MUST have explicit type definitions:
 
@@ -83,26 +125,28 @@ Sync Impact Report:
 
 **Rationale**: Type safety catches bugs at compile time, improves IDE support, serves as living documentation, enables safe refactoring, and reduces runtime errors.
 
-### IV. Accessibility & UX (NON-NEGOTIABLE)
+### V. Accessibility & UX (NON-NEGOTIABLE)
 
 **Accessibility is a first-class requirement.** All UI components MUST meet WCAG 2.1 AA standards:
 
-- **Semantic HTML**: Use proper HTML5 elements for structure and meaning
-- **ARIA attributes**: Implement appropriate ARIA roles, labels, and descriptions
-- **Keyboard navigation**: All interactive elements must be keyboard accessible
-- **Focus management**: Visible focus indicators and logical tab order
+- **Semantic HTML**: Use proper HTML5 elements for structure and meaning (shadcn/ui provides this)
+- **ARIA attributes**: Implement appropriate ARIA roles, labels, and descriptions (leverage shadcn/ui's built-in ARIA)
+- **Keyboard navigation**: All interactive elements must be keyboard accessible (shadcn/ui handles this by default)
+- **Focus management**: Visible focus indicators and logical tab order (use shadcn/ui's focus-visible utilities)
 - **Screen reader support**: Descriptive alt text, labels, and announcements
-- **Color contrast**: Minimum 4.5:1 ratio for normal text, 3:1 for large text
+- **Color contrast**: Minimum 4.5:1 ratio for normal text, 3:1 for large text (verify against shadcn/ui theme)
 
 **User Experience Standards**:
 
 - Responsive design with mobile-first approach
-- Loading states for async operations
-- Error handling with clear user feedback
+- Loading states for async operations (use shadcn/ui Skeleton, Spinner)
+- Error handling with clear user feedback (use shadcn/ui Alert, Toast)
 - Optimistic updates where appropriate
-- Consistent spacing, typography, and color systems
+- Consistent spacing, typography, and color systems (defined in shadcn/ui theme)
 
-**Rationale**: Accessibility ensures inclusive design for all users, improves overall UX, meets legal requirements, and demonstrates professional quality.
+**Rationale**: Accessibility ensures inclusive design for all users, improves overall UX, meets legal requirements, and demonstrates professional quality. shadcn/ui components provide accessibility features by default through Radix UI primitives. shadcn/ui components provide accessibility features by default through Radix UI primitives.
+
+### VI. Performance & Optimization
 
 ### V. Performance & Optimization
 
@@ -131,7 +175,7 @@ Sync Impact Report:
 
 **Rationale**: Premature optimization adds complexity without benefit. Measured optimization ensures we solve real performance problems efficiently.
 
-### VI. Code Quality & Standards
+### VII. Code Quality & Standards
 
 **Code quality is maintained through automation and peer review.** All code MUST:
 
@@ -180,11 +224,13 @@ Sync Impact Report:
 
 ### Styling
 
-- **CSS-in-JS or Modules**: Use Tailwind CSS, CSS Modules, or Styled Components
-- **Design system**: shadcn-ui for accessible, customizable components
-- **Responsive design**: Mobile-first approach with consistent breakpoints
-- **Theming**: CSS custom properties (variables) for theme values
-- **Accessibility**: Proper ARIA attributes, semantic HTML, focus states
+- **shadcn/ui + Tailwind CSS**: Primary styling system (mandatory)
+- **Design system**: All UI components from shadcn/ui registry
+- **Theming**: CSS custom properties in `globals.css` for shadcn/ui theme customization
+- **Responsive design**: Use Tailwind's responsive utilities with mobile-first approach
+- **Component variants**: Use shadcn/ui's variant system (via class-variance-authority)
+- **Accessibility**: Leverage shadcn/ui's built-in ARIA attributes, semantic HTML, focus states
+- **Custom styles**: Only add via Tailwind utilities or extending shadcn/ui theme
 
 ### Forms and Validation
 
@@ -209,8 +255,9 @@ Sync Impact Report:
 - **Unit tests**: All custom hooks, utility functions, and business logic
 - **Component tests**: User-facing behavior, not implementation details
 - **Integration tests**: Complex component interactions and workflows
+- **shadcn/ui integration**: Test custom compositions and extensions of shadcn/ui components
 - **Contract tests**: API interfaces and data structure validation
-- **Accessibility tests**: Screen reader compatibility and keyboard navigation
+- **Accessibility tests**: Verify shadcn/ui components maintain accessibility in context
 
 ### Testing Tools
 
@@ -223,8 +270,10 @@ Sync Impact Report:
 ### Testing Best Practices
 
 - **Test behavior**: Test what users see and do, not implementation
+- **shadcn/ui components**: Test integration and composition, not shadcn/ui internals
 - **Arrange-Act-Assert**: Clear test structure with setup, action, verification
 - **Descriptive names**: Test names should describe the scenario and expected outcome
+- **Accessibility**: Verify ARIA attributes and keyboard navigation work with shadcn/ui components
 - **Single assertion**: Each test should verify one behavior
 - **No flaky tests**: Tests must be deterministic and reliable
 
@@ -301,4 +350,4 @@ When constitution violations are necessary (rare):
 - Obtain explicit approval before proceeding
 - Include migration plan to return to compliance when possible
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-15 | **Last Amended**: 2025-10-15
+**Version**: 1.1.0 | **Ratified**: 2025-10-15 | **Last Amended**: 2025-10-15
