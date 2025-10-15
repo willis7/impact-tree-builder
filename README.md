@@ -14,6 +14,7 @@ A modern, fully-featured impact tree visualization tool built with React, TypeSc
 ## ✨ Features
 
 ### Core Functionality (Preserved from Original)
+
 - ✅ Interactive impact tree visualization with SVG
 - ✅ Multiple node types: Business Metrics, Product Metrics, Initiatives
 - ✅ Relationship mapping with visual indicators
@@ -26,6 +27,7 @@ A modern, fully-featured impact tree visualization tool built with React, TypeSc
 - ✅ Real-time statistics
 
 ### Modern Enhancements
+
 - 🎨 Modern, clean UI with shadcn-ui components
 - 🌓 Dark mode support (system preference)
 - 📱 Responsive design
@@ -38,7 +40,8 @@ A modern, fully-featured impact tree visualization tool built with React, TypeSc
 ## 🛠️ Development
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - npm or yarn
 
 ### Installation
@@ -58,6 +61,26 @@ npm run preview
 ```
 
 The app will be available at `http://localhost:5173/`
+
+### Testing
+
+This project follows **Test-Driven Development (TDD)** principles as outlined in the constitution.
+
+#### Running Tests
+
+```bash
+# Run tests in watch mode (for development)
+npm test
+
+# Run tests once (for CI/CD)
+npm run test:run
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Open Vitest UI (interactive test runner)
+npm run test:ui
+```
 
 ## 📁 Project Structure
 
@@ -89,62 +112,39 @@ src/
 ## 🎯 Usage
 
 ### Adding Nodes
+
 1. Select a node type from the left sidebar (Business Metric, Product Metric, or Initiative)
 2. Click anywhere on the canvas to place the node
 3. Edit the node properties in the right panel
 
 ### Creating Relationships
+
 1. Click "Connect Nodes" in the left sidebar
 2. Select the relationship type (Desirable Effect, Undesirable Effect, or Rollup)
 3. Click on two nodes to create a relationship
 
 ### Moving Nodes
+
 - Simply drag and drop nodes to reposition them on the canvas
 
 ### Adding Measurements
+
 1. Select a node
 2. Click the "+" button in the Measurements section
 3. Fill in the measurement details
 4. Performance indicators will automatically update
 
 ### Canvas Controls
+
 - **Zoom In/Out** - Use the + and - buttons
 - **Reset View** - Return to default zoom and position
 - **Center View** - Center the canvas on all nodes
 
 ### Saving and Exporting
+
 - **Save** - Saves to browser localStorage
 - **Load** - Loads from browser localStorage
 - **Export** - Downloads as JSON file
-
-## 🎨 Customization
-
-### Tailwind Configuration
-Customize the theme in `tailwind.config.js`:
-- Colors
-- Spacing
-- Border radius
-- Shadows
-
-### Component Styling
-All UI components are fully customizable through Tailwind utility classes.
-
-### Adding New Node Types
-1. Update the `Node` type in `src/types/index.ts`
-2. Add the new type to the Sidebar component
-3. Update the color and shape logic in `ImpactTreeApp.tsx`
-
-## 🔧 Configuration
-
-### Path Aliases
-The project uses `@` as an alias for the `src` directory:
-```typescript
-import { Button } from '@/components/ui/button'
-```
-
-Configured in:
-- `vite.config.ts`
-- `tsconfig.app.json`
 
 ## 📦 Building for Production
 
@@ -153,31 +153,6 @@ npm run build
 ```
 
 The optimized build will be in the `dist/` folder, ready to deploy to any static hosting service.
-
-## 🚢 Deployment
-
-The app can be deployed to:
-- Vercel
-- Netlify
-- GitHub Pages
-- Any static hosting service
-
-Simply run `npm run build` and deploy the `dist` folder.
-
-## 🆚 Comparison with Original
-
-| Feature | Original | Modern Version |
-|---------|----------|----------------|
-| Framework | Vanilla JS | React + TypeScript |
-| Build Tool | None | Vite |
-| Styling | Custom CSS | Tailwind CSS + shadcn-ui |
-| Type Safety | ❌ | ✅ TypeScript |
-| Component Architecture | Monolithic | Modular Components |
-| Dark Mode | ❌ | ✅ Built-in |
-| Performance | Good | Excellent (Vite) |
-| Developer Experience | Basic | Modern with HMR, types |
-| Accessibility | Basic | Enhanced (shadcn-ui) |
-| Maintainability | Moderate | High |
 
 ## 📝 License
 
