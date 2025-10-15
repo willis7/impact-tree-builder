@@ -329,26 +329,11 @@ export function ImpactTreeApp() {
 
       // If node is at nearly same position (within 5 units) and same type within 500ms, it's a duplicate
       if (timeDiff < 500 && xDiff < 5 && yDiff < 5 && isSameType) {
-        console.log("🚫 Prevented duplicate node creation", {
-          timeDiff,
-          xDiff,
-          yDiff,
-          typeToUse,
-        });
         return;
       }
     }
 
     const nodeId = "node_" + Date.now();
-
-    console.log("🔵 handleAddNode called", {
-      nodeId,
-      x,
-      y,
-      typeToUse,
-      timestamp: now,
-      stackTrace: new Error().stack?.split("\\n").slice(1, 4).join("\\n"),
-    });
 
     // Record this node creation
     lastCreatedNodeRef.current = {
@@ -613,18 +598,10 @@ export function ImpactTreeApp() {
 
     // Check if we've already processed this exact drag event
     if (lastDragIdRef.current === dragEventId) {
-      console.log("Skipping duplicate handleDragEnd call");
       return;
     }
 
     lastDragIdRef.current = dragEventId;
-
-    console.log("handleDragEnd called", {
-      over: over?.id,
-      isDragging: dragState.isDragging,
-      dragEventId,
-    });
-    console.log("Full event:", { active, delta, activatorEvent, over });
 
     // Only create node if dropped over canvas and we have canvas element
     if (
@@ -632,10 +609,6 @@ export function ImpactTreeApp() {
       canvasElement &&
       dragState.isDragging
     ) {
-      // Try using the droppable's rect to get accurate position
-      const dropRect = over.rect;
-      console.log("Drop rect:", dropRect);
-
       // Get mouse position - try activator + delta first, then fall back to ref
       let screenX = mousePositionRef.current.x;
       let screenY = mousePositionRef.current.y;
@@ -649,19 +622,6 @@ export function ImpactTreeApp() {
         // Use clientX/clientY (viewport coordinates) not screenX/screenY (monitor coordinates)
         screenX = (activatorEvent.clientX as number) + delta.x;
         screenY = (activatorEvent.clientY as number) + delta.y;
-        console.log("Using activator + delta:", {
-          activatorClientX: activatorEvent.clientX,
-          activatorClientY: activatorEvent.clientY,
-          deltaX: delta.x,
-          deltaY: delta.y,
-          finalX: screenX,
-          finalY: screenY,
-          mouseRefX: mousePositionRef.current.x,
-          mouseRefY: mousePositionRef.current.y,
-          diff: mousePositionRef.current.x - screenX,
-        });
-      } else {
-        console.log("Using mousePositionRef:", { x: screenX, y: screenY });
       }
 
       // Convert screen coordinates to canvas coordinates
@@ -678,15 +638,9 @@ export function ImpactTreeApp() {
             const svgPoint = pt.matrixTransform(ctm.inverse());
             canvasX = svgPoint.x;
             canvasY = svgPoint.y;
-            console.log("SVG NATIVE TRANSFORM:", {
-              screenX,
-              screenY,
-              canvasX,
-              canvasY,
-            });
           }
-        } catch (e) {
-          console.error("SVG native transform failed:", e);
+        } catch {
+          // SVG native transform failed, will use fallback
         }
       }
 
@@ -704,23 +658,6 @@ export function ImpactTreeApp() {
 
         canvasX = viewBox.x + normalizedX * actualViewBoxWidth;
         canvasY = viewBox.y + normalizedY * actualViewBoxHeight;
-
-        // Debug: show exactly where we're dropping
-        console.log("DRAG DROP MANUAL:", {
-          screenX,
-          screenY,
-          rectLeft: rect.left,
-          rectTop: rect.top,
-          rectWidth: rect.width,
-          rectHeight: rect.height,
-          viewBoxX: viewBox.x,
-          viewBoxY: viewBox.y,
-          scale: viewBox.scale,
-          normalizedX,
-          normalizedY,
-          canvasX,
-          canvasY,
-        });
       }
 
       endDrag({ x: canvasX, y: canvasY });

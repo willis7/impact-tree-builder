@@ -86,9 +86,6 @@ export function ImpactCanvas({
     // Prevent clicks within 150ms of drag ending (cooldown period)
     const timeSinceDragEnd = Date.now() - lastDragEndTime;
     if (timeSinceDragEnd < 150) {
-      console.log("Ignoring click during cooldown period", {
-        timeSinceDragEnd,
-      });
       return;
     }
 
@@ -105,15 +102,9 @@ export function ImpactCanvas({
           const svgPoint = pt.matrixTransform(ctm.inverse());
           x = svgPoint.x;
           y = svgPoint.y;
-          console.log("CLICK SVG NATIVE:", {
-            clientX: e.clientX,
-            clientY: e.clientY,
-            x,
-            y,
-          });
         }
-      } catch (err) {
-        console.error("SVG native transform failed:", err);
+      } catch {
+        // SVG native transform failed, will use fallback
       }
     }
 
@@ -131,13 +122,6 @@ export function ImpactCanvas({
 
       x = viewBox.x + normalizedX * actualViewBoxWidth;
       y = viewBox.y + normalizedY * actualViewBoxHeight;
-
-      console.log("CLICK MANUAL:", {
-        clientX: e.clientX,
-        clientY: e.clientY,
-        x,
-        y,
-      });
     }
 
     const target = e.target as SVGElement;

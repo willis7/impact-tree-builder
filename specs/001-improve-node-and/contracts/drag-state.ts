@@ -7,8 +7,6 @@
  * @module DragStateContracts
  */
 
-import type { Node } from "../../../src/types";
-
 /**
  * Node types available for creation via drag-and-drop
  */

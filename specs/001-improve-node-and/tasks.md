@@ -61,13 +61,13 @@
 - [x] T017 [P] [US1] Write unit test for useDragNode drag start handler in src/hooks/**tests**/useDragNode.test.ts
 - [x] T018 [P] [US1] Write unit test for useDragNode drag end handler in src/hooks/**tests**/useDragNode.test.ts
 - [x] T019 [P] [US1] Write unit test for useDragNode cancel handler (Escape key) in src/hooks/**tests**/useDragNode.test.ts
-- [ ] T020 [P] [US1] Add test for node type button drag initiation in src/components/**tests**/Sidebar.test.tsx
-- [ ] T021 [P] [US1] Add test for canvas drop zone acceptance in src/components/**tests**/ImpactCanvas.test.tsx
-- [ ] T022 [P] [US1] Add test for node creation at drop coordinates in src/components/**tests**/ImpactCanvas.test.tsx
-- [ ] T023 [P] [US1] Add integration test for complete drag-drop flow in src/components/**tests**/ImpactTreeApp.test.tsx
-- [ ] T024 [P] [US1] Add test for drag preview visibility during drag in src/components/**tests**/ImpactTreeApp.test.tsx
-- [ ] T025 [P] [US1] Add test for drag cancellation when dropping outside canvas in src/components/**tests**/ImpactTreeApp.test.tsx
-- [ ] T026 [US1] Verify all User Story 1 tests FAIL (Red phase) before implementation
+- [x] T020 [P] [US1] Add test for node type button drag initiation in src/components/**tests**/Sidebar.test.tsx
+- [x] T021 [P] [US1] Add test for canvas drop zone acceptance in src/components/**tests**/ImpactCanvas.test.tsx
+- [x] T022 [P] [US1] Add test for node creation at drop coordinates in src/components/**tests**/ImpactCanvas.test.tsx
+- [x] T023 [P] [US1] Add integration test for complete drag-drop flow in src/components/**tests**/ImpactTreeApp.test.tsx
+- [x] T024 [P] [US1] Add test for drag preview visibility during drag in src/components/**tests**/ImpactTreeApp.test.tsx
+- [x] T025 [P] [US1] Add test for drag cancellation when dropping outside canvas in src/components/**tests**/ImpactTreeApp.test.tsx
+- [x] T026 [US1] Verify all User Story 1 tests FAIL (Red phase) before implementation
 
 ### Implementation for User Story 1
 
@@ -100,17 +100,17 @@
 
 ### Tests for User Story 2
 
-- [ ] T043 [P] [US2] Add test for node type button state after successful drop in src/components/**tests**/Sidebar.test.tsx
-- [ ] T044 [P] [US2] Add test for application mode returning to select after node creation in src/components/**tests**/ImpactTreeApp.test.tsx
-- [ ] T045 [P] [US2] Add test for no node creation on subsequent canvas click after drop in src/components/**tests**/ImpactCanvas.test.tsx
-- [ ] T046 [US2] Verify all User Story 2 tests FAIL (Red phase)
+- [x] T043 [P] [US2] Add test for node type button state after successful drop in src/components/**tests**/Sidebar.test.tsx
+- [x] T044 [P] [US2] Add test for application mode returning to select after node creation in src/components/**tests**/ImpactTreeApp.test.tsx
+- [x] T045 [P] [US2] Add test for no node creation on subsequent canvas click after drop in src/components/**tests**/ImpactCanvas.test.tsx
+- [x] T046 [US2] Verify all User Story 2 tests FAIL (Red phase)
 
 ### Implementation for User Story 2
 
-- [ ] T047 [US2] Add auto-deselect logic to handleDragEnd() in useDragNode hook in src/hooks/useDragNode.ts
-- [ ] T048 [US2] Update node type button selected state on drop complete in src/components/Sidebar.tsx
-- [ ] T049 [US2] Add mode reset to "select" after successful node creation in src/components/ImpactTreeApp.tsx
-- [ ] T050 [US2] Verify all User Story 2 tests PASS (Green phase)
+- [x] T047 [US2] Add auto-deselect logic to handleDragEnd() in useDragNode hook in src/hooks/useDragNode.ts
+- [x] T048 [US2] Update node type button selected state on drop complete in src/components/Sidebar.tsx
+- [x] T049 [US2] Add mode reset to "select" after successful node creation in src/components/ImpactTreeApp.tsx
+- [x] T050 [US2] Verify all User Story 2 tests PASS (Green phase)
 
 **Checkpoint**: User Stories 1 AND 2 should both work - test auto-deselection after node creation
 
@@ -220,27 +220,27 @@
 
 ### Canvas Auto-Pan (FR-019)
 
-- [ ] T101 [P] [POLISH] Write unit tests for useCanvasAutoPan hook in src/hooks/**tests**/useCanvasAutoPan.test.ts
-- [ ] T102 [POLISH] Create useCanvasAutoPan custom hook with edge detection in src/hooks/useCanvasAutoPan.ts
-- [ ] T103 [POLISH] Implement requestAnimationFrame-based pan velocity calculation in src/hooks/useCanvasAutoPan.ts
-- [ ] T104 [POLISH] Add 50px edge threshold detection for auto-pan trigger in src/hooks/useCanvasAutoPan.ts
-- [ ] T105 [POLISH] Add max pan speed of 10px/frame limit in src/hooks/useCanvasAutoPan.ts
-- [ ] T106 [POLISH] Integrate useCanvasAutoPan hook in ImpactTreeApp during drag in src/components/ImpactTreeApp.tsx
-- [ ] T107 [POLISH] Add integration test for auto-pan during node drag near edges in src/components/**tests**/ImpactTreeApp.test.tsx
+- [x] T101 [P] [POLISH] Write unit tests for useCanvasAutoPan hook in src/hooks/**tests**/useCanvasAutoPan.test.ts
+- [x] T102 [POLISH] Create useCanvasAutoPan custom hook with edge detection in src/hooks/useCanvasAutoPan.ts
+- [x] T103 [POLISH] Implement requestAnimationFrame-based pan velocity calculation in src/hooks/useCanvasAutoPan.ts
+- [x] T104 [POLISH] Add 50px edge threshold detection for auto-pan trigger in src/hooks/useCanvasAutoPan.ts
+- [x] T105 [POLISH] Add max pan speed of 10px/frame limit in src/hooks/useCanvasAutoPan.ts
+- [x] T106 [POLISH] Integrate useCanvasAutoPan hook in ImpactTreeApp during drag in src/components/ImpactTreeApp.tsx
+- [x] T107 [POLISH] Add integration test for auto-pan during node drag near edges in src/components/**tests**/ImpactTreeApp.test.tsx
 - [ ] T108 [POLISH] Add integration test for auto-pan during relationship drag near edges in src/components/**tests**/ImpactTreeApp.test.tsx
 
 ### Keyboard Shortcuts (FR-017, FR-018)
 
-- [ ] T109 [P] [POLISH] Add global keyboard event listener for node type shortcuts (b/p/i/n) in src/components/ImpactTreeApp.tsx
-- [ ] T110 [P] [POLISH] Implement 'b' key handler for Business Metric selection in src/components/ImpactTreeApp.tsx
-- [ ] T111 [P] [POLISH] Implement 'p' key handler for Product Metric selection in src/components/ImpactTreeApp.tsx
-- [ ] T112 [P] [POLISH] Implement 'i' key handler for Initiative selection in src/components/ImpactTreeApp.tsx
-- [ ] T113 [P] [POLISH] Implement 'n' key handler for Initiative Negative selection in src/components/ImpactTreeApp.tsx
+- [x] T109 [P] [POLISH] Add global keyboard event listener for node type shortcuts (b/p/i/n) in src/components/ImpactTreeApp.tsx
+- [x] T110 [P] [POLISH] Implement 'b' key handler for Business Metric selection in src/components/ImpactTreeApp.tsx
+- [x] T111 [P] [POLISH] Implement 'p' key handler for Product Metric selection in src/components/ImpactTreeApp.tsx
+- [x] T112 [P] [POLISH] Implement 'i' key handler for Initiative selection in src/components/ImpactTreeApp.tsx
+- [x] T113 [P] [POLISH] Implement 'n' key handler for Initiative Negative selection in src/components/ImpactTreeApp.tsx
 - [ ] T114 [P] [POLISH] Add arrow key handlers for virtual cursor movement in src/components/ImpactTreeApp.tsx
 - [ ] T115 [P] [POLISH] Add Enter key handler for node placement at cursor position in src/components/ImpactTreeApp.tsx
-- [ ] T116 [P] [POLISH] Add Escape key handler for operation cancellation in src/components/ImpactTreeApp.tsx
-- [ ] T117 [P] [POLISH] Add 'c' key handler for "Connect Nodes" mode activation in src/components/ImpactTreeApp.tsx
-- [ ] T118 [P] [POLISH] Add 's' key handler for "Select" mode activation in src/components/ImpactTreeApp.tsx
+- [x] T116 [P] [POLISH] Add Escape key handler for operation cancellation in src/components/ImpactTreeApp.tsx
+- [x] T117 [P] [POLISH] Add 'c' key handler for "Connect Nodes" mode activation in src/components/ImpactTreeApp.tsx
+- [x] T118 [P] [POLISH] Add 's' key handler for "Select" mode activation in src/components/ImpactTreeApp.tsx
 - [ ] T119 [POLISH] Add keyboard shortcut tests for all node type keys in src/components/**tests**/ImpactTreeApp.test.tsx
 - [ ] T120 [POLISH] Add keyboard shortcut tests for arrow key navigation in src/components/**tests**/ImpactTreeApp.test.tsx
 - [ ] T121 [POLISH] Add keyboard shortcut tests for Enter and Escape keys in src/components/**tests**/ImpactTreeApp.test.tsx
@@ -251,27 +251,27 @@
 
 **Purpose**: Finalization, documentation, and validation
 
-- [ ] T122 [P] [POLISH] Add JSDoc comments to useDragNode hook in src/hooks/useDragNode.ts
+- [x] T122 [P] [POLISH] Add JSDoc comments to useDragNode hook in src/hooks/useDragNode.ts
 - [ ] T123 [P] [POLISH] Add JSDoc comments to useDragRelationship hook in src/hooks/useDragRelationship.ts
-- [ ] T124 [P] [POLISH] Add JSDoc comments to useCanvasAutoPan hook in src/hooks/useCanvasAutoPan.ts
-- [ ] T125 [P] [POLISH] Add JSDoc comments to drag utility functions in src/lib/drag-utils.ts
-- [ ] T126 [P] [POLISH] Update README.md with keyboard shortcuts documentation
-- [ ] T127 [P] [POLISH] Update README.md with drag-and-drop usage instructions
-- [ ] T128 [POLISH] Run full test suite and verify all 111 existing tests still pass
-- [ ] T129 [POLISH] Run full test suite and verify all 40+ new tests pass
-- [ ] T130 [POLISH] Manual testing: Verify SC-001 (node creation < 3 seconds)
-- [ ] T131 [POLISH] Manual testing: Verify SC-002 (90% first-attempt success)
-- [ ] T132 [POLISH] Manual testing: Verify SC-003 (relationship creation < 4 seconds)
-- [ ] T133 [POLISH] Manual testing: Verify SC-005 (feedback within 100ms)
-- [ ] T134 [POLISH] Manual testing: Verify SC-006 (works at all zoom levels 0.5x-3x)
-- [ ] T135 [POLISH] Performance test: Verify drag preview rendering at 60fps
-- [ ] T136 [POLISH] Performance test: Verify auto-pan smooth acceleration/deceleration
-- [ ] T137 [POLISH] Accessibility test: Verify keyboard-only workflow (no mouse)
+- [x] T124 [P] [POLISH] Add JSDoc comments to useCanvasAutoPan hook in src/hooks/useCanvasAutoPan.ts
+- [x] T125 [P] [POLISH] Add JSDoc comments to drag utility functions in src/lib/drag-utils.ts
+- [x] T126 [P] [POLISH] Update README.md with keyboard shortcuts documentation
+- [x] T127 [P] [POLISH] Update README.md with drag-and-drop usage instructions
+- [x] T128 [POLISH] Run full test suite and verify all 111 existing tests still pass
+- [x] T129 [POLISH] Run full test suite and verify all 40+ new tests pass
+- [x] T130 [POLISH] Manual testing: Verify SC-001 (node creation < 3 seconds)
+- [x] T131 [POLISH] Manual testing: Verify SC-002 (90% first-attempt success)
+- [x] T132 [POLISH] Manual testing: Verify SC-003 (relationship creation < 4 seconds)
+- [x] T133 [POLISH] Manual testing: Verify SC-005 (feedback within 100ms)
+- [x] T134 [POLISH] Manual testing: Verify SC-006 (works at all zoom levels 0.5x-3x)
+- [x] T135 [POLISH] Performance test: Verify drag preview rendering at 60fps
+- [x] T136 [POLISH] Performance test: Verify auto-pan smooth acceleration/deceleration
+- [x] T137 [POLISH] Accessibility test: Verify keyboard-only workflow (no mouse)
 - [ ] T138 [POLISH] Accessibility test: Verify screen reader announces drag operations
-- [ ] T139 [POLISH] Code cleanup: Remove any console.log or debugging code
-- [ ] T140 [POLISH] Code cleanup: Run ESLint and fix any warnings
-- [ ] T141 [POLISH] Code cleanup: Format all code with Prettier
-- [ ] T142 [POLISH] Run quickstart.md validation checklist
+- [x] T139 [POLISH] Code cleanup: Remove any console.log or debugging code
+- [x] T140 [POLISH] Code cleanup: Run ESLint and fix any warnings
+- [x] T141 [POLISH] Code cleanup: Format all code with Prettier
+- [x] T142 [POLISH] Run quickstart.md validation checklist
 - [ ] T143 [POLISH] Create demo video or GIF showing drag-and-drop interactions
 
 ---
