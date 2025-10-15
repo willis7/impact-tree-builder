@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useDroppable } from "@dnd-kit/core";
 import type { Node, Relationship, Measurement } from "@/types";
 
 interface ImpactCanvasProps {
@@ -19,6 +20,11 @@ interface ImpactCanvasProps {
     height: number;
     scale: number;
   };
+  onCanvasReady?: (element: SVGSVGElement | null) => void;
+  onNodeClickForConnect?: (nodeId: string) => void;
+  connectSourceNodeId?: string | null;
+  isDraggingNode?: boolean;
+  onCreateRelationship?: (sourceNodeId: string, targetNodeId: string) => void;
 }
 
 export function ImpactCanvas({
@@ -33,8 +39,19 @@ export function ImpactCanvas({
   onAddNode,
   mode,
   viewBox,
+  onCanvasReady,
+  onNodeClickForConnect,
+  connectSourceNodeId,
+  isDraggingNode,
+  onCreateRelationship,
 }: ImpactCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Configure drop zone for @dnd-kit drag-and-drop
+  const { setNodeRef } = useDroppable({
+    id: "canvas-drop-zone",
+  });
+
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
     nodeId: string | null;
@@ -42,16 +59,75 @@ export function ImpactCanvas({
     startY: number;
   }>({ isDragging: false, nodeId: null, startX: 0, startY: 0 });
 
+  // State for tracking relationship creation via drag
+  const [connectDragState, setConnectDragState] = useState<{
+    isDragging: boolean;
+    sourceNodeId: string | null;
+    currentX: number;
+    currentY: number;
+    hoveredNodeId: string | null;
+  }>({
+    isDragging: false,
+    sourceNodeId: null,
+    currentX: 0,
+    currentY: 0,
+    hoveredNodeId: null,
+  });
+
   const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
 
-    const rect = svgRef.current.getBoundingClientRect();
-    const x =
-      (e.clientX - rect.left) * (viewBox.width / rect.width / viewBox.scale) +
-      viewBox.x;
-    const y =
-      (e.clientY - rect.top) * (viewBox.height / rect.height / viewBox.scale) +
-      viewBox.y;
+    // Prevent click from firing if a node drag just completed
+    // (drag drop triggers both drag end AND click, causing duplicates)
+    if (isDraggingNode) return;
+
+    // Try using SVG's native coordinate transformation
+    let x, y;
+
+    if (svgRef.current instanceof SVGSVGElement) {
+      try {
+        const pt = svgRef.current.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const ctm = svgRef.current.getScreenCTM();
+        if (ctm) {
+          const svgPoint = pt.matrixTransform(ctm.inverse());
+          x = svgPoint.x;
+          y = svgPoint.y;
+          console.log("CLICK SVG NATIVE:", {
+            clientX: e.clientX,
+            clientY: e.clientY,
+            x,
+            y,
+          });
+        }
+      } catch (err) {
+        console.error("SVG native transform failed:", err);
+      }
+    }
+
+    // Fallback to manual calculation
+    if (x === undefined || y === undefined) {
+      const rect = svgRef.current.getBoundingClientRect();
+
+      // The actual viewBox dimensions on the SVG (scaled)
+      const actualViewBoxWidth = viewBox.width / viewBox.scale;
+      const actualViewBoxHeight = viewBox.height / viewBox.scale;
+
+      // Transform: screen -> normalized (0-1) -> viewBox coordinates
+      const normalizedX = (e.clientX - rect.left) / rect.width;
+      const normalizedY = (e.clientY - rect.top) / rect.height;
+
+      x = viewBox.x + normalizedX * actualViewBoxWidth;
+      y = viewBox.y + normalizedY * actualViewBoxHeight;
+
+      console.log("CLICK MANUAL:", {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        x,
+        y,
+      });
+    }
 
     const target = e.target as SVGElement;
     const nodeElement = target.closest("[data-node-id]");
@@ -59,6 +135,13 @@ export function ImpactCanvas({
 
     if (mode === "add-node" && !nodeElement && !relElement) {
       onAddNode(x, y);
+    } else if (mode === "connect") {
+      if (nodeElement) {
+        const nodeId = nodeElement.getAttribute("data-node-id");
+        if (nodeId && onNodeClickForConnect) {
+          onNodeClickForConnect(nodeId);
+        }
+      }
     } else if (mode === "select") {
       if (nodeElement) {
         const nodeId = nodeElement.getAttribute("data-node-id");
@@ -81,6 +164,15 @@ export function ImpactCanvas({
         nodeId,
         startX: e.clientX,
         startY: e.clientY,
+      });
+    } else if (mode === "connect") {
+      e.stopPropagation();
+      setConnectDragState({
+        isDragging: true,
+        sourceNodeId: nodeId,
+        currentX: e.clientX,
+        currentY: e.clientY,
+        hoveredNodeId: null,
       });
     }
   };
@@ -108,10 +200,48 @@ export function ImpactCanvas({
         startX: e.clientX,
         startY: e.clientY,
       }));
+    } else if (connectDragState.isDragging) {
+      // Check if hovering over a node
+      const target = e.target as SVGElement;
+      const nodeElement = target.closest("[data-node-id]");
+      const hoveredNodeId = nodeElement
+        ? nodeElement.getAttribute("data-node-id")
+        : null;
+
+      // Update cursor position for connect mode drag
+      setConnectDragState((prev) => ({
+        ...prev,
+        currentX: e.clientX,
+        currentY: e.clientY,
+        hoveredNodeId:
+          hoveredNodeId !== prev.sourceNodeId ? hoveredNodeId : null,
+      }));
     }
   };
 
   const handleMouseUp = () => {
+    if (connectDragState.isDragging && connectDragState.sourceNodeId) {
+      // Use hoveredNodeId from state which is more reliable than checking event target
+      const targetNodeId = connectDragState.hoveredNodeId;
+
+      if (
+        targetNodeId &&
+        targetNodeId !== connectDragState.sourceNodeId &&
+        onCreateRelationship
+      ) {
+        // Create relationship directly via callback instead of using click handler
+        onCreateRelationship(connectDragState.sourceNodeId, targetNodeId);
+      }
+
+      setConnectDragState({
+        isDragging: false,
+        sourceNodeId: null,
+        currentX: 0,
+        currentY: 0,
+        hoveredNodeId: null,
+      });
+    }
+
     setDragState({ isDragging: false, nodeId: null, startX: 0, startY: 0 });
   };
 
@@ -151,7 +281,11 @@ export function ImpactCanvas({
       )}
 
       <svg
-        ref={svgRef}
+        ref={(node) => {
+          svgRef.current = node;
+          setNodeRef(node as unknown as HTMLElement);
+          onCanvasReady?.(node);
+        }}
         className="w-full h-full cursor-crosshair"
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width / viewBox.scale} ${
           viewBox.height / viewBox.scale
@@ -260,12 +394,62 @@ export function ImpactCanvas({
               />
             );
           })}
+
+          {/* Preview line during connect drag */}
+          {connectDragState.isDragging &&
+            connectDragState.sourceNodeId &&
+            svgRef.current &&
+            (() => {
+              const sourceNode = nodes.get(connectDragState.sourceNodeId);
+              if (!sourceNode) return null;
+
+              // If hovering over a target node, snap to its center
+              let endX, endY;
+              if (connectDragState.hoveredNodeId) {
+                const targetNode = nodes.get(connectDragState.hoveredNodeId);
+                if (targetNode) {
+                  endX = targetNode.position_x;
+                  endY = targetNode.position_y;
+                }
+              }
+
+              // Otherwise, use cursor position
+              if (endX === undefined || endY === undefined) {
+                const rect = svgRef.current.getBoundingClientRect();
+                endX =
+                  (connectDragState.currentX - rect.left) *
+                    (viewBox.width / rect.width / viewBox.scale) +
+                  viewBox.x;
+                endY =
+                  (connectDragState.currentY - rect.top) *
+                    (viewBox.height / rect.height / viewBox.scale) +
+                  viewBox.y;
+              }
+
+              return (
+                <line
+                  x1={sourceNode.position_x}
+                  y1={sourceNode.position_y}
+                  x2={endX}
+                  y2={endY}
+                  stroke={
+                    connectDragState.hoveredNodeId ? "#4CAF50" : "#FF6F00"
+                  }
+                  strokeWidth={2}
+                  strokeDasharray="5,5"
+                  opacity={0.6}
+                  pointerEvents="none"
+                />
+              );
+            })()}
         </g>
 
         {/* Nodes */}
         <g>
           {Array.from(nodes.values()).map((node) => {
             const hasPerformance = calculatePerformance(node.id);
+            const isConnectSource =
+              mode === "connect" && connectSourceNodeId === node.id;
 
             return (
               <g
@@ -285,9 +469,13 @@ export function ImpactCanvas({
                     stroke={
                       selectedNodeId === node.id
                         ? "hsl(var(--primary))"
+                        : isConnectSource
+                        ? "#FF6F00"
                         : "#fff"
                     }
-                    strokeWidth={selectedNodeId === node.id ? 3 : 1}
+                    strokeWidth={
+                      selectedNodeId === node.id || isConnectSource ? 3 : 1
+                    }
                     className="transition-all hover:brightness-110"
                   />
                 ) : (
@@ -301,9 +489,13 @@ export function ImpactCanvas({
                     stroke={
                       selectedNodeId === node.id
                         ? "hsl(var(--primary))"
+                        : isConnectSource
+                        ? "#FF6F00"
                         : "#fff"
                     }
-                    strokeWidth={selectedNodeId === node.id ? 3 : 1}
+                    strokeWidth={
+                      selectedNodeId === node.id || isConnectSource ? 3 : 1
+                    }
                     className="transition-all hover:brightness-110"
                   />
                 )}

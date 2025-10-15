@@ -13,7 +13,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Link2 } from "lucide-react";
+import { useDraggable } from "@dnd-kit/core";
 import type { ImpactTree, Node, Relationship } from "@/types";
+import type { NodeType } from "@/types/drag";
 import { sanitizeInput, sanitizeDescription } from "@/lib/sanitize";
 
 /**
@@ -36,6 +38,74 @@ interface SidebarProps {
   nodes: Map<string, Node>;
   /** Map of all relationships in the tree by ID */
   relationships: Map<string, Relationship>;
+}
+
+/**
+ * Props for the DraggableNodeButton component
+ */
+interface DraggableNodeButtonProps {
+  /** Node type identifier */
+  nodeType: NodeType;
+  /** Display label for the button */
+  label: string;
+  /** Background color for the node type indicator */
+  colorClass: string;
+  /** Border radius class (rounded for rectangles, rounded-full for circles) */
+  shapeClass: string;
+  /** Tooltip description */
+  tooltipText: string;
+  /** Whether this button is currently selected */
+  isSelected: boolean;
+  /** Click handler for the button */
+  onClick: () => void;
+}
+
+/**
+ * Draggable node type button component
+ * Supports both click-to-add and drag-to-add workflows (FR-014)
+ *
+ * @param props - Component props
+ * @returns A draggable button element
+ */
+function DraggableNodeButton({
+  nodeType,
+  label,
+  colorClass,
+  shapeClass,
+  tooltipText,
+  isSelected,
+  onClick,
+}: DraggableNodeButtonProps) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `node-type-${nodeType}`,
+    data: {
+      nodeType,
+    },
+  });
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          ref={setNodeRef}
+          variant={isSelected ? "default" : "outline"}
+          className={`w-full justify-start ${isDragging ? "opacity-50" : ""}`}
+          onClick={onClick}
+          {...listeners}
+          {...attributes}
+        >
+          <div className={`w-6 h-4 ${shapeClass} ${colorClass} mr-3`} />
+          {label}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{tooltipText}</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Click or drag to canvas
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 /**
@@ -128,89 +198,55 @@ export function Sidebar({
           <div className="p-4">
             <h3 className="font-semibold mb-3">Add Nodes</h3>
             <div className="space-y-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={
-                      mode === "add-node" &&
-                      selectedNodeType === "business_metric"
-                        ? "default"
-                        : "outline"
-                    }
-                    className="w-full justify-start"
-                    onClick={() => handleNodeTypeClick("business_metric")}
-                  >
-                    <div className="w-6 h-4 rounded bg-[#2E7D32] mr-3" />
-                    Business Metric
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Add a business outcome or goal metric</p>
-                </TooltipContent>
-              </Tooltip>
+              <DraggableNodeButton
+                nodeType="business_metric"
+                label="Business Metric"
+                colorClass="bg-[#2E7D32]"
+                shapeClass="rounded"
+                tooltipText="Add a business outcome or goal metric"
+                isSelected={
+                  mode === "add-node" && selectedNodeType === "business_metric"
+                }
+                onClick={() => handleNodeTypeClick("business_metric")}
+              />
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={
-                      mode === "add-node" &&
-                      selectedNodeType === "product_metric"
-                        ? "default"
-                        : "outline"
-                    }
-                    className="w-full justify-start"
-                    onClick={() => handleNodeTypeClick("product_metric")}
-                  >
-                    <div className="w-6 h-4 rounded bg-[#1976D2] mr-3" />
-                    Product Metric
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Add a product or feature metric</p>
-                </TooltipContent>
-              </Tooltip>
+              <DraggableNodeButton
+                nodeType="product_metric"
+                label="Product Metric"
+                colorClass="bg-[#1976D2]"
+                shapeClass="rounded"
+                tooltipText="Add a product or feature metric"
+                isSelected={
+                  mode === "add-node" && selectedNodeType === "product_metric"
+                }
+                onClick={() => handleNodeTypeClick("product_metric")}
+              />
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={
-                      mode === "add-node" &&
-                      selectedNodeType === "initiative_positive"
-                        ? "default"
-                        : "outline"
-                    }
-                    className="w-full justify-start"
-                    onClick={() => handleNodeTypeClick("initiative_positive")}
-                  >
-                    <div className="w-6 h-4 rounded-full bg-[#FF6F00] mr-3" />
-                    Positive Initiative
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Add an initiative with positive impact</p>
-                </TooltipContent>
-              </Tooltip>
+              <DraggableNodeButton
+                nodeType="initiative_positive"
+                label="Positive Initiative"
+                colorClass="bg-[#FF6F00]"
+                shapeClass="rounded-full"
+                tooltipText="Add an initiative with positive impact"
+                isSelected={
+                  mode === "add-node" &&
+                  selectedNodeType === "initiative_positive"
+                }
+                onClick={() => handleNodeTypeClick("initiative_positive")}
+              />
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={
-                      mode === "add-node" &&
-                      selectedNodeType === "initiative_negative"
-                        ? "default"
-                        : "outline"
-                    }
-                    className="w-full justify-start"
-                    onClick={() => handleNodeTypeClick("initiative_negative")}
-                  >
-                    <div className="w-6 h-4 rounded-full bg-[#D32F2F] mr-3" />
-                    Negative Initiative
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Add an initiative with negative impact</p>
-                </TooltipContent>
-              </Tooltip>
+              <DraggableNodeButton
+                nodeType="initiative_negative"
+                label="Negative Initiative"
+                colorClass="bg-[#D32F2F]"
+                shapeClass="rounded-full"
+                tooltipText="Add an initiative with negative impact"
+                isSelected={
+                  mode === "add-node" &&
+                  selectedNodeType === "initiative_negative"
+                }
+                onClick={() => handleNodeTypeClick("initiative_negative")}
+              />
             </div>
           </div>
 
