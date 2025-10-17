@@ -99,6 +99,10 @@ export function ImpactTreeApp() {
     null
   );
 
+  // Zoom constraints
+  const MIN_ZOOM = 0.1; // 10% of original size
+  const MAX_ZOOM = 5.0; // 500% of original size
+
   // Track real-time mouse position for accurate drop coordinates
   const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -250,11 +254,29 @@ export function ImpactTreeApp() {
    * Adjusts the canvas zoom level
    * @param factor - Multiplier for the current scale (e.g., 1.2 to zoom in, 0.8 to zoom out)
    */
-  const handleZoom = (factor: number) => {
-    setViewBox((prev) => ({
-      ...prev,
-      scale: prev.scale * factor,
-    }));
+  const handleZoom = (factor: number, centerX?: number, centerY?: number) => {
+    setViewBox((prev) => {
+      const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev.scale * factor));
+
+      // If center coordinates provided, adjust viewBox position to zoom toward center
+      if (centerX !== undefined && centerY !== undefined) {
+        const scaleChange = newScale / prev.scale;
+        const newX = centerX - (centerX - prev.x) * scaleChange;
+        const newY = centerY - (centerY - prev.y) * scaleChange;
+
+        return {
+          ...prev,
+          x: newX,
+          y: newY,
+          scale: newScale,
+        };
+      }
+
+      return {
+        ...prev,
+        scale: newScale,
+      };
+    });
   };
 
   /**
@@ -1199,7 +1221,8 @@ export function ImpactTreeApp() {
                      y: prev.y + deltaY,
                    }));
                  }}
-                />
+                 onZoom={handleZoom}
+               />
 
                {/* Canvas Controls */}
                <div className="absolute bottom-4 right-4 flex flex-col gap-2">

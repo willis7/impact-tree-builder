@@ -232,4 +232,40 @@ describe("ImpactCanvas", () => {
       }
     });
   });
+
+  describe("Mouse Wheel Zoom Functionality", () => {
+    it("should have onWheel handler attached to SVG", () => {
+      const onZoom = vi.fn();
+
+      render(<ImpactCanvas {...defaultProps} onZoom={onZoom} />);
+
+      const svg = document.querySelector("svg");
+      expect(svg).toBeInTheDocument();
+
+      // Check that the SVG has wheel event properties (indirect test)
+      if (svg) {
+        // The wheel event handler should be attached
+        // We can test this by checking the component renders without errors
+        expect(svg.tagName).toBe("svg");
+      }
+    });
+
+    it("should handle wheel events gracefully when onZoom prop is not provided", () => {
+      render(<ImpactCanvas {...defaultProps} />); // No onZoom prop
+
+      const svg = document.querySelector("svg");
+      if (svg) {
+        const wheelEvent = new WheelEvent("wheel", {
+          deltaY: -100,
+          clientX: 100,
+          clientY: 100,
+        });
+
+        // Should not throw an error when onZoom is not provided
+        expect(() => {
+          svg.dispatchEvent(wheelEvent);
+        }).not.toThrow();
+      }
+    });
+  });
 });

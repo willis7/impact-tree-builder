@@ -27,6 +27,7 @@ interface ImpactCanvasProps {
   lastDragEndTime?: number;
   onCreateRelationship?: (sourceNodeId: string, targetNodeId: string) => void;
   onPan?: (deltaX: number, deltaY: number) => void;
+  onZoom?: (factor: number, centerX: number, centerY: number) => void;
 }
 
 export function ImpactCanvas({
@@ -48,6 +49,7 @@ export function ImpactCanvas({
   lastDragEndTime = 0,
   onCreateRelationship,
   onPan,
+  onZoom,
 }: ImpactCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -286,6 +288,27 @@ export function ImpactCanvas({
     setDragState({ isDragging: false, nodeId: null, startX: 0, startY: 0 });
   };
 
+  const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+    if (!onZoom || !svgRef.current) return;
+
+    e.preventDefault();
+
+    // Calculate zoom factor from deltaY (negative = zoom in, positive = zoom out)
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+
+    // Get mouse position relative to canvas
+    const rect = svgRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // Transform mouse position to canvas coordinates
+    const canvasX = mouseX * (viewBox.width / rect.width) + viewBox.x;
+    const canvasY = mouseY * (viewBox.height / rect.height) + viewBox.y;
+
+    // Apply zoom centered on mouse position
+    onZoom(zoomFactor, canvasX, canvasY);
+  };
+
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength - 3) + "...";
@@ -348,6 +371,7 @@ export function ImpactCanvas({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
       >
         <defs>
           <marker
