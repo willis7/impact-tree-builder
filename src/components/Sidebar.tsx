@@ -12,9 +12,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useMemo } from "react";
 import { Link2 } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
-import type { ImpactTree, Node, Relationship } from "@/types";
+import type { ImpactTree, Node, Relationship, Measurement } from "@/types";
 import type { NodeType } from "@/types/drag";
 import { sanitizeInput, sanitizeDescription } from "@/lib/sanitize";
 
@@ -38,6 +39,8 @@ interface SidebarProps {
   nodes: Map<string, Node>;
   /** Map of all relationships in the tree by ID */
   relationships: Map<string, Relationship>;
+  /** Map of all measurements in the tree by ID */
+  measurements: Map<string, Measurement>;
 }
 
 /**
@@ -135,6 +138,7 @@ export function Sidebar({
   onNodeTypeSelect,
   nodes,
   relationships,
+  measurements,
 }: SidebarProps) {
   /**
    * Handles node type button clicks
@@ -147,7 +151,13 @@ export function Sidebar({
   };
 
   // Track which nodes have measurements for statistics
-  const measuredNodes = new Set();
+  const measuredNodes = useMemo(() => {
+    const nodeSet = new Set<string>();
+    measurements.forEach(measurement => {
+      nodeSet.add(measurement.node_id);
+    });
+    return nodeSet;
+  }, [measurements]);
 
   return (
     <aside className="w-80 border-r bg-card flex flex-col h-full">

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@/test/test-utils";
 import { Sidebar } from "../Sidebar";
 import { userEvent } from "@testing-library/user-event";
-import type { ImpactTree, Node, Relationship } from "@/types";
+import type { ImpactTree, Node, Relationship, Measurement } from "@/types";
 
 /**
  * Tests for Sidebar component
@@ -65,6 +65,21 @@ describe("Sidebar", () => {
     ],
   ]);
 
+  const mockMeasurements = new Map<string, Measurement>([
+    [
+      "meas-1",
+      {
+        id: "meas-1",
+        node_id: "node-1",
+        metric_name: "Test Metric",
+        expected_value: 100,
+        actual_value: 90,
+        measurement_date: "2025-01-01",
+        impact_type: "proximate",
+      },
+    ],
+  ]);
+
   const defaultProps = {
     tree: mockTree,
     onTreeUpdate: vi.fn(),
@@ -74,6 +89,7 @@ describe("Sidebar", () => {
     onNodeTypeSelect: vi.fn(),
     nodes: mockNodes,
     relationships: mockRelationships,
+    measurements: mockMeasurements,
   };
 
   it("should render tree information", () => {
@@ -214,12 +230,18 @@ describe("Sidebar", () => {
   it("should display statistics correctly", () => {
     render(<Sidebar {...defaultProps} />);
 
-    // Should show relationship count
-    expect(screen.getByText("1")).toBeDefined();
-
     // Check that statistics section exists
     const statistics = screen.getByText(/statistics/i);
     expect(statistics).toBeDefined();
+
+    // Should show total nodes count (2 nodes)
+    expect(screen.getByText("2")).toBeDefined();
+
+    // Should show relationships count (1 relationship)
+    expect(screen.getAllByText("1")).toHaveLength(2); // One for relationships, one for measured nodes
+
+    // Should show measured nodes count (1 measured node)
+    expect(screen.getByText("Measured Nodes")).toBeDefined();
   });
 
   it("should render with empty nodes and relationships", () => {

@@ -1169,6 +1169,7 @@ export function ImpactTreeApp() {
               onNodeTypeSelect={setSelectedNodeType}
               nodes={nodes}
               relationships={relationships}
+              measurements={measurements}
             />
 
             {/* Canvas */}
