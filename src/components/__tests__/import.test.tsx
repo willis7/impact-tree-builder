@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ImpactTreeApp } from "../ImpactTreeApp";
 
@@ -11,7 +11,7 @@ const mockFileReader = {
   result: null as string | ArrayBuffer | null,
 };
 
-global.FileReader = vi.fn(() => mockFileReader) as any;
+global.FileReader = vi.fn(() => mockFileReader) as unknown as typeof FileReader;
 
 // Mock URL.createObjectURL and revokeObjectURL
 global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
@@ -46,7 +46,7 @@ describe("Import Functionality", () => {
     expect(mockClick).toHaveBeenCalled();
   });
 
-  it("should validate and import valid JSON data", () => {
+  it("should validate and import valid JSON data", async () => {
     render(<ImpactTreeApp />);
 
     const validJsonData = {
@@ -79,35 +79,39 @@ describe("Import Functionality", () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const mockFile = new File([JSON.stringify(validJsonData)], 'test.json', { type: 'application/json' });
 
-    // Simulate file selection
-    fireEvent.change(fileInput, { target: { files: [mockFile] } });
+    // Simulate file selection and file read
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [mockFile] } });
 
-    // Simulate successful file read
-    mockFileReader.result = JSON.stringify(validJsonData);
-    mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
+      // Simulate successful file read
+      mockFileReader.result = JSON.stringify(validJsonData);
+      mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
+    });
 
     // Check that alert was called with success message
     expect(global.alert).toHaveBeenCalledWith('Tree imported successfully!');
   });
 
-  it("should show error for invalid JSON", () => {
+  it("should show error for invalid JSON", async () => {
     render(<ImpactTreeApp />);
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const mockFile = new File(['invalid json'], 'test.json', { type: 'application/json' });
 
-    // Simulate file selection
-    fireEvent.change(fileInput, { target: { files: [mockFile] } });
+    // Simulate file selection and file read
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [mockFile] } });
 
-    // Simulate file read with invalid JSON
-    mockFileReader.result = 'invalid json';
-    mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
+      // Simulate file read with invalid JSON
+      mockFileReader.result = 'invalid json';
+      mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
+    });
 
     // Check that alert was called with error message
     expect(global.alert).toHaveBeenCalledWith(expect.stringContaining('Failed to parse JSON file'));
   });
 
-  it("should validate data structure", () => {
+  it("should validate data structure", async () => {
     render(<ImpactTreeApp />);
 
     const invalidData = {
@@ -120,12 +124,14 @@ describe("Import Functionality", () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const mockFile = new File([JSON.stringify(invalidData)], 'test.json', { type: 'application/json' });
 
-    // Simulate file selection
-    fireEvent.change(fileInput, { target: { files: [mockFile] } });
+    // Simulate file selection and file read
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [mockFile] } });
 
-    // Simulate successful file read
-    mockFileReader.result = JSON.stringify(invalidData);
-    mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
+      // Simulate successful file read
+      mockFileReader.result = JSON.stringify(invalidData);
+      mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
+    });
 
     // Check that alert was called with validation errors
     expect(global.alert).toHaveBeenCalledWith(expect.stringContaining('Import failed'));

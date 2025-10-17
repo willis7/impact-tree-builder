@@ -415,7 +415,7 @@ export function PropertiesPanel({
                       })
                     }
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="impactType" className="w-full">
                       <SelectValue placeholder="Select impact type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -435,7 +435,7 @@ export function PropertiesPanel({
                       })
                     }
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="measurementPeriod" className="w-full">
                       <SelectValue placeholder="Select period" />
                     </SelectTrigger>
                     <SelectContent>

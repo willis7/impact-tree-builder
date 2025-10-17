@@ -29,6 +29,32 @@ global.alert = vi.fn();
 global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
 global.URL.revokeObjectURL = vi.fn();
 
+// Mock useDragNode hook
+vi.mock("@/hooks/useDragNode", () => ({
+  useDragNode: vi.fn(() => ({
+    dragState: {
+      isDragging: false,
+      dragType: null,
+      sourceNodeId: null,
+      activeNodeType: null,
+      cursorPosition: { x: 0, y: 0 },
+      previewPosition: { x: 0, y: 0 },
+      targetNodeId: null,
+    },
+    startDrag: vi.fn(),
+    updateDragPosition: vi.fn(),
+    endDrag: vi.fn(),
+    cancelDrag: vi.fn(),
+  })),
+}));
+
+
+
+// Mock useCanvasAutoPan hook
+vi.mock("@/hooks/useCanvasAutoPan", () => ({
+  useCanvasAutoPan: vi.fn(),
+}));
+
 describe("ImpactTreeApp", () => {
   beforeEach(() => {
     localStorageMock.clear();
@@ -169,6 +195,8 @@ describe("ImpactTreeApp", () => {
       }
     });
   });
+
+
 
   describe("Save Functionality", () => {
     it("saves tree data to localStorage", async () => {
@@ -461,4 +489,6 @@ describe("ImpactTreeApp", () => {
       // (no visual "active" indicator)
     });
   });
+
+
 });

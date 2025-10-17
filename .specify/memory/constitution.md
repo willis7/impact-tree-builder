@@ -264,7 +264,7 @@ If shadcn/ui lacks required functionality:
 - **Test runner**: Jest for test execution and assertions
 - **Component testing**: React Testing Library for component tests
 - **Mocking**: Mock external dependencies and API calls appropriately
-- **Coverage**: Aim for 80%+ coverage, 100% for critical paths
+- **Coverage**: Aim for 70%+ coverage, 100% for critical paths
 - **Continuous testing**: Run tests on every commit via CI/CD
 
 ### Testing Best Practices

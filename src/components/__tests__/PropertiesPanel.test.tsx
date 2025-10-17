@@ -385,4 +385,6 @@ describe("PropertiesPanel", () => {
       expect(call.expected_value).toBe(0);
     });
   });
+
+
 });
