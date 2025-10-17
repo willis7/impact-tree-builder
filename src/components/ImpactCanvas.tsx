@@ -510,7 +510,11 @@ export function ImpactCanvas({
                 key={node.id}
                 data-node-id={node.id}
                 transform={`translate(${node.position_x}, ${node.position_y})`}
-                className={`cursor-pointer transition-all duration-200 ${
+                className={`cursor-pointer ${
+                  dragState.isDragging && dragState.nodeId === node.id
+                    ? ""
+                    : "transition-all duration-200"
+                } ${
                   connectDragState.isDragging &&
                   connectDragState.hoveredNodeId === node.id
                     ? "animate-pulse"
