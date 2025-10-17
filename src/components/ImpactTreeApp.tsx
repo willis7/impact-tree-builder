@@ -1173,86 +1173,94 @@ export function ImpactTreeApp() {
 
             {/* Canvas */}
             <main className="flex-1 relative bg-muted/20 border-x">
-              <ImpactCanvas
-                nodes={nodes}
-                relationships={relationships}
-                measurements={measurements}
-                selectedNodeId={selectedNodeId}
-                selectedRelationshipId={selectedRelationshipId}
-                onNodeSelect={setSelectedNodeId}
-                onRelationshipSelect={setSelectedRelationshipId}
-                onNodeMove={handleUpdateNode}
-                onAddNode={handleAddNode}
-                mode={mode}
-                viewBox={viewBox}
-                onCanvasReady={setCanvasElement}
-                onNodeClickForConnect={handleNodeClickForConnect}
-                connectSourceNodeId={connectSourceNodeId}
-                isDraggingNode={dragState.isDragging}
-                lastDragEndTime={lastDragEndTimeRef.current}
-                onCreateRelationship={handleCreateRelationshipDirect}
-              />{" "}
-              {/* Canvas Controls */}
-              <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={() => handleZoom(1.2)}
-                  className="shadow-lg"
-                  aria-label="Zoom in"
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={() => handleZoom(0.8)}
-                  className="shadow-lg"
-                  aria-label="Zoom out"
-                >
-                  <ZoomOut className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={handleResetView}
-                  className="shadow-lg"
-                  aria-label="Reset view"
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={handleCenterView}
-                  className="shadow-lg"
-                  aria-label="Center view on all nodes"
-                >
-                  <Move className="h-4 w-4" />
-                </Button>
-              </div>
-            </main>
+               <ImpactCanvas
+                 nodes={nodes}
+                 relationships={relationships}
+                 measurements={measurements}
+                 selectedNodeId={selectedNodeId}
+                 selectedRelationshipId={selectedRelationshipId}
+                 onNodeSelect={setSelectedNodeId}
+                 onRelationshipSelect={setSelectedRelationshipId}
+                 onNodeMove={handleUpdateNode}
+                 onAddNode={handleAddNode}
+                 mode={mode}
+                 viewBox={viewBox}
+                 onCanvasReady={setCanvasElement}
+                 onNodeClickForConnect={handleNodeClickForConnect}
+                 connectSourceNodeId={connectSourceNodeId}
+                 isDraggingNode={dragState.isDragging}
+                 lastDragEndTime={lastDragEndTimeRef.current}
+                 onCreateRelationship={handleCreateRelationshipDirect}
+                 onPan={(deltaX, deltaY) => {
+                   setViewBox((prev) => ({
+                     ...prev,
+                     x: prev.x + deltaX,
+                     y: prev.y + deltaY,
+                   }));
+                 }}
+                />
 
-            {/* Right Panel */}
-            <PropertiesPanel
-              selectedNode={selectedNodeId ? nodes.get(selectedNodeId) : null}
-              selectedRelationship={
-                selectedRelationshipId
-                  ? relationships.get(selectedRelationshipId)
-                  : null
-              }
-              measurements={measurements}
-              nodes={nodes}
-              onUpdateNode={handleUpdateNode}
-              onDeleteNode={handleDeleteNode}
-              onAddMeasurement={(measurement: Measurement) => {
-                setMeasurements(
-                  new Map(measurements.set(measurement.id, measurement))
-                );
-              }}
-            />
-          </div>
-        </TooltipProvider>
+               {/* Canvas Controls */}
+               <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+                 <Button
+                   variant="secondary"
+                   size="icon"
+                   onClick={() => handleZoom(1.2)}
+                   className="shadow-lg"
+                   aria-label="Zoom in"
+                 >
+                   <ZoomIn className="h-4 w-4" />
+                 </Button>
+                 <Button
+                   variant="secondary"
+                   size="icon"
+                   onClick={() => handleZoom(0.8)}
+                   className="shadow-lg"
+                   aria-label="Zoom out"
+                 >
+                   <ZoomOut className="h-4 w-4" />
+                 </Button>
+                 <Button
+                   variant="secondary"
+                   size="icon"
+                   onClick={handleResetView}
+                   className="shadow-lg"
+                   aria-label="Reset view"
+                 >
+                   <Maximize2 className="h-4 w-4" />
+                 </Button>
+                 <Button
+                   variant="secondary"
+                   size="icon"
+                   onClick={handleCenterView}
+                   className="shadow-lg"
+                   aria-label="Center view on all nodes"
+                 >
+                   <Move className="h-4 w-4" />
+                 </Button>
+               </div>
+               </main>
+
+             {/* Right Panel */}
+             <PropertiesPanel
+               selectedNode={selectedNodeId ? nodes.get(selectedNodeId) : null}
+               selectedRelationship={
+                 selectedRelationshipId
+                   ? relationships.get(selectedRelationshipId)
+                   : null
+               }
+               measurements={measurements}
+               nodes={nodes}
+               onUpdateNode={handleUpdateNode}
+               onDeleteNode={handleDeleteNode}
+               onAddMeasurement={(measurement: Measurement) => {
+                 setMeasurements(
+                   new Map(measurements.set(measurement.id, measurement))
+                 );
+               }}
+             />
+           </div>
+         </TooltipProvider>
       </div>
 
       {/* Drag Overlay for node preview during drag */}

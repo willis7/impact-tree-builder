@@ -26,6 +26,7 @@ interface ImpactCanvasProps {
   isDraggingNode?: boolean;
   lastDragEndTime?: number;
   onCreateRelationship?: (sourceNodeId: string, targetNodeId: string) => void;
+  onPan?: (deltaX: number, deltaY: number) => void;
 }
 
 export function ImpactCanvas({
@@ -46,6 +47,7 @@ export function ImpactCanvas({
   isDraggingNode,
   lastDragEndTime = 0,
   onCreateRelationship,
+  onPan,
 }: ImpactCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -75,6 +77,13 @@ export function ImpactCanvas({
     currentY: 0,
     hoveredNodeId: null,
   });
+
+  // State for tracking canvas panning
+  const [panState, setPanState] = useState<{
+    isPanning: boolean;
+    startX: number;
+    startY: number;
+  }>({ isPanning: false, startX: 0, startY: 0 });
 
   const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
@@ -172,8 +181,42 @@ export function ImpactCanvas({
     }
   };
 
+  const handleCanvasMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    // Only allow panning in select mode and when not already dragging
+    if (mode !== "select" || dragState.isDragging || connectDragState.isDragging) {
+      return;
+    }
+
+    // Check if clicking on empty canvas (not on nodes or relationships)
+    const target = e.target as SVGElement;
+    const nodeElement = target.closest("[data-node-id]");
+    const relElement = target.closest("[data-relationship-id]");
+
+    if (!nodeElement && !relElement && onPan) {
+      e.preventDefault();
+      setPanState({
+        isPanning: true,
+        startX: e.clientX,
+        startY: e.clientY,
+      });
+    }
+  };
+
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (dragState.isDragging && dragState.nodeId && svgRef.current) {
+    if (panState.isPanning && svgRef.current && onPan) {
+      // Handle canvas panning
+      const rect = svgRef.current.getBoundingClientRect();
+      const deltaX = (e.clientX - panState.startX) * (viewBox.width / rect.width / viewBox.scale);
+      const deltaY = (e.clientY - panState.startY) * (viewBox.height / rect.height / viewBox.scale);
+
+      onPan(deltaX, deltaY);
+
+      setPanState((prev) => ({
+        ...prev,
+        startX: e.clientX,
+        startY: e.clientY,
+      }));
+    } else if (dragState.isDragging && dragState.nodeId && svgRef.current) {
       const rect = svgRef.current.getBoundingClientRect();
       const deltaX =
         (e.clientX - dragState.startX) *
@@ -215,6 +258,9 @@ export function ImpactCanvas({
   };
 
   const handleMouseUp = () => {
+    // Reset pan state
+    setPanState({ isPanning: false, startX: 0, startY: 0 });
+
     if (connectDragState.isDragging && connectDragState.sourceNodeId) {
       // Use hoveredNodeId from state which is more reliable than checking event target
       const targetNodeId = connectDragState.hoveredNodeId;
@@ -282,18 +328,23 @@ export function ImpactCanvas({
           onCanvasReady?.(node);
         }}
         className={`w-full h-full transition-colors duration-150 ${
-          mode === "connect" && connectDragState.isDragging
+          panState.isPanning
+            ? "cursor-grabbing"
+            : mode === "connect" && connectDragState.isDragging
             ? "cursor-crosshair"
             : mode === "connect"
             ? "cursor-pointer"
             : mode === "add-node"
             ? "cursor-copy"
+            : mode === "select"
+            ? "cursor-grab"
             : "cursor-default"
         }`}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width / viewBox.scale} ${
           viewBox.height / viewBox.scale
         }`}
         onClick={handleCanvasClick}
+        onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}

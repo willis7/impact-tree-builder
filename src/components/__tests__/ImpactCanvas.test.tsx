@@ -146,4 +146,90 @@ describe("ImpactCanvas", () => {
       screen.getByText(/select a node type from the left sidebar/i)
     ).toBeInTheDocument();
   });
+
+  describe("Drag-to-Pan Functionality", () => {
+    it("should call onPan when canvas is dragged in select mode", async () => {
+      const onPan = vi.fn();
+      const user = userEvent.setup();
+
+      render(<ImpactCanvas {...defaultProps} onPan={onPan} />);
+
+      const svg = document.querySelector("svg");
+      if (svg) {
+        // Simulate mouse down on empty canvas area
+        await user.pointer([
+          { keys: "[MouseLeft>]", target: svg },
+          { coords: { x: 100, y: 100 } },
+        ]);
+
+        // Move mouse to simulate drag
+        await user.pointer([
+          { coords: { x: 150, y: 150 } },
+        ]);
+
+        // Release mouse
+        await user.pointer([
+          { keys: "[/MouseLeft]" },
+        ]);
+
+        // Should have called onPan with delta values
+        expect(onPan).toHaveBeenCalled();
+        const [deltaX, deltaY] = onPan.mock.calls[0];
+        expect(typeof deltaX).toBe("number");
+        expect(typeof deltaY).toBe("number");
+      }
+    });
+
+    it("should not pan when clicking on nodes", async () => {
+      const onPan = vi.fn();
+      const user = userEvent.setup();
+
+      render(<ImpactCanvas {...defaultProps} onPan={onPan} />);
+
+      const node = screen.getByText("Test Node");
+
+      // Try to drag the node
+      await user.pointer([
+        { keys: "[MouseLeft>]", target: node },
+        { coords: { x: 100, y: 100 } },
+      ]);
+
+      await user.pointer([
+        { coords: { x: 150, y: 150 } },
+      ]);
+
+      await user.pointer([
+        { keys: "[/MouseLeft]" },
+      ]);
+
+      // Should not have called onPan when dragging nodes
+      expect(onPan).not.toHaveBeenCalled();
+    });
+
+    it("should not pan in non-select modes", async () => {
+      const onPan = vi.fn();
+      const user = userEvent.setup();
+
+      render(<ImpactCanvas {...defaultProps} mode="add-node" onPan={onPan} />);
+
+      const svg = document.querySelector("svg");
+      if (svg) {
+        await user.pointer([
+          { keys: "[MouseLeft>]", target: svg },
+          { coords: { x: 100, y: 100 } },
+        ]);
+
+        await user.pointer([
+          { coords: { x: 150, y: 150 } },
+        ]);
+
+        await user.pointer([
+          { keys: "[/MouseLeft]" },
+        ]);
+
+        // Should not pan in add-node mode
+        expect(onPan).not.toHaveBeenCalled();
+      }
+    });
+  });
 });
