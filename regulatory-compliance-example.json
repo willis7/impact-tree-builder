@@ -1,0 +1,318 @@
+{
+  "tree": {
+    "id": "tree_regulatory_compliance",
+    "name": "Regulatory Compliance AI Assistant Impact Analysis",
+    "description": "Impact intelligence network for Regu Nerd AI assistant initiative to improve regulatory compliance decision-making",
+    "created_date": "2025-01-15",
+    "updated_date": "2025-01-15",
+    "owner": "Compliance Team"
+  },
+  "nodes": [
+    {
+      "id": "node_business_impact",
+      "name": "Business Impact from Compliance Decisions",
+      "description": "Overall business impact affected by timeliness and quality of regulatory compliance decisions",
+      "node_type": "business_metric",
+      "level": 1,
+      "position_x": 500,
+      "position_y": 100,
+      "color": "#2E7D32",
+      "shape": "rectangle"
+    },
+    {
+      "id": "node_time_to_decision",
+      "name": "Time to Decision",
+      "description": "Time from case assignment to final compliance decision (hours/days/weeks)",
+      "node_type": "business_metric",
+      "level": 1,
+      "position_x": 200,
+      "position_y": 100,
+      "color": "#2E7D32",
+      "shape": "rectangle"
+    },
+    {
+      "id": "node_analyst_productivity",
+      "name": "Analyst Productivity",
+      "description": "Efficiency and throughput of compliance analysts in processing cases",
+      "node_type": "product_metric",
+      "level": 2,
+      "position_x": 100,
+      "position_y": 250,
+      "color": "#1976D2",
+      "shape": "rectangle"
+    },
+    {
+      "id": "node_case_processing_time",
+      "name": "Case Processing Time",
+      "description": "Time spent by analysts to process individual compliance cases",
+      "node_type": "product_metric",
+      "level": 2,
+      "position_x": 300,
+      "position_y": 250,
+      "color": "#1976D2",
+      "shape": "rectangle"
+    },
+    {
+      "id": "node_decision_quality",
+      "name": "Decision Quality",
+      "description": "Accuracy and compliance of regulatory decisions made",
+      "node_type": "product_metric",
+      "level": 2,
+      "position_x": 700,
+      "position_y": 250,
+      "color": "#1976D2",
+      "shape": "rectangle"
+    },
+    {
+      "id": "node_ai_assistant_uptake",
+      "name": "AI Assistant Uptake",
+      "description": "Adoption rate of Regu Nerd AI assistant (prompts per analyst per week)",
+      "node_type": "product_metric",
+      "level": 2,
+      "position_x": 500,
+      "position_y": 250,
+      "color": "#1976D2",
+      "shape": "rectangle"
+    },
+    {
+      "id": "node_regulation_interpretation",
+      "name": "Regulation Interpretation Speed",
+      "description": "Speed of interpreting complex and changing regulatory requirements",
+      "node_type": "initiative",
+      "level": 3,
+      "position_x": 50,
+      "position_y": 400,
+      "color": "#FF6F00",
+      "shape": "ellipse"
+    },
+    {
+      "id": "node_expertise_application",
+      "name": "Expertise Application Efficiency",
+      "description": "Efficiency in applying compliance expertise to case-specific scenarios",
+      "node_type": "initiative",
+      "level": 3,
+      "position_x": 200,
+      "position_y": 400,
+      "color": "#FF6F00",
+      "shape": "ellipse"
+    },
+    {
+      "id": "node_regu_nerd_ai",
+      "name": "Regu Nerd AI Assistant",
+      "description": "AI-powered assistant for interpreting and applying ever-changing regulations",
+      "node_type": "initiative",
+      "level": 3,
+      "position_x": 350,
+      "position_y": 400,
+      "color": "#FF6F00",
+      "shape": "ellipse"
+    },
+    {
+      "id": "node_recommendation_quality",
+      "name": "Initial Recommendation Quality",
+      "description": "Quality and accuracy of initial compliance recommendations",
+      "node_type": "initiative",
+      "level": 3,
+      "position_x": 500,
+      "position_y": 400,
+      "color": "#FF6F00",
+      "shape": "ellipse"
+    },
+    {
+      "id": "node_review_process",
+      "name": "Review and Approval Process",
+      "description": "Efficiency of multi-level review and approval workflows",
+      "node_type": "initiative",
+      "level": 3,
+      "position_x": 650,
+      "position_y": 400,
+      "color": "#FF6F00",
+      "shape": "ellipse"
+    },
+    {
+      "id": "node_regulation_updates",
+      "name": "Regulation Change Monitoring",
+      "description": "Monitoring and tracking of regulatory changes and updates",
+      "node_type": "initiative",
+      "level": 3,
+      "position_x": 800,
+      "position_y": 400,
+      "color": "#D32F2F",
+      "shape": "ellipse"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel_time_to_business_impact",
+      "source_node_id": "node_time_to_decision",
+      "target_node_id": "node_business_impact",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.9
+    },
+    {
+      "id": "rel_analyst_to_time",
+      "source_node_id": "node_analyst_productivity",
+      "target_node_id": "node_time_to_decision",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.8
+    },
+    {
+      "id": "rel_processing_to_time",
+      "source_node_id": "node_case_processing_time",
+      "target_node_id": "node_time_to_decision",
+      "relationship_type": "undesirable_effect",
+      "color": "#F44336",
+      "strength": 0.7
+    },
+    {
+      "id": "rel_quality_to_business",
+      "source_node_id": "node_decision_quality",
+      "target_node_id": "node_business_impact",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.8
+    },
+    {
+      "id": "rel_ai_uptake_to_productivity",
+      "source_node_id": "node_ai_assistant_uptake",
+      "target_node_id": "node_analyst_productivity",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.6
+    },
+    {
+      "id": "rel_regulation_speed_to_processing",
+      "source_node_id": "node_regulation_interpretation",
+      "target_node_id": "node_case_processing_time",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.8
+    },
+    {
+      "id": "rel_expertise_to_processing",
+      "source_node_id": "node_expertise_application",
+      "target_node_id": "node_case_processing_time",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.7
+    },
+    {
+      "id": "rel_ai_to_regulation",
+      "source_node_id": "node_regu_nerd_ai",
+      "target_node_id": "node_regulation_interpretation",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.9
+    },
+    {
+      "id": "rel_ai_to_expertise",
+      "source_node_id": "node_regu_nerd_ai",
+      "target_node_id": "node_expertise_application",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.7
+    },
+    {
+      "id": "rel_ai_to_uptake",
+      "source_node_id": "node_regu_nerd_ai",
+      "target_node_id": "node_ai_assistant_uptake",
+      "relationship_type": "rollup",
+      "color": "#9E9E9E",
+      "strength": 1.0
+    },
+    {
+      "id": "rel_recommendation_to_quality",
+      "source_node_id": "node_recommendation_quality",
+      "target_node_id": "node_decision_quality",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.8
+    },
+    {
+      "id": "rel_ai_to_recommendation",
+      "source_node_id": "node_regu_nerd_ai",
+      "target_node_id": "node_recommendation_quality",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.6
+    },
+    {
+      "id": "rel_review_to_time",
+      "source_node_id": "node_review_process",
+      "target_node_id": "node_time_to_decision",
+      "relationship_type": "undesirable_effect",
+      "color": "#F44336",
+      "strength": 0.5
+    },
+    {
+      "id": "rel_regulation_updates_to_quality",
+      "source_node_id": "node_regulation_updates",
+      "target_node_id": "node_decision_quality",
+      "relationship_type": "desirable_effect",
+      "color": "#4CAF50",
+      "strength": 0.6
+    },
+    {
+      "id": "rel_regulation_updates_to_time",
+      "source_node_id": "node_regulation_updates",
+      "target_node_id": "node_time_to_decision",
+      "relationship_type": "undesirable_effect",
+      "color": "#F44336",
+      "strength": 0.4
+    }
+  ],
+  "measurements": [
+    {
+      "id": "meas_time_to_decision_baseline",
+      "node_id": "node_time_to_decision",
+      "metric_name": "Average Time to Decision (days)",
+      "expected_value": 7.0,
+      "actual_value": 10.5,
+      "measurement_date": "2025-01-01",
+      "measurement_period": "monthly",
+      "impact_type": "downstream"
+    },
+    {
+      "id": "meas_case_processing_baseline",
+      "node_id": "node_case_processing_time",
+      "metric_name": "Average Case Processing Time (hours)",
+      "expected_value": 16.0,
+      "actual_value": 24.0,
+      "measurement_date": "2025-01-01",
+      "measurement_period": "monthly",
+      "impact_type": "proximate"
+    },
+    {
+      "id": "meas_ai_uptake_target",
+      "node_id": "node_ai_assistant_uptake",
+      "metric_name": "AI Assistant Prompts per Analyst per Week",
+      "expected_value": 50.0,
+      "actual_value": 0.0,
+      "measurement_date": "2025-01-01",
+      "measurement_period": "weekly",
+      "impact_type": "proximate"
+    },
+    {
+      "id": "meas_business_impact_baseline",
+      "node_id": "node_business_impact",
+      "metric_name": "Compliance-Related Business Impact Score",
+      "expected_value": 85.0,
+      "actual_value": 72.0,
+      "measurement_date": "2025-01-01",
+      "measurement_period": "quarterly",
+      "impact_type": "downstream"
+    },
+    {
+      "id": "meas_decision_quality_baseline",
+      "node_id": "node_decision_quality",
+      "metric_name": "Decision Accuracy Rate (%)",
+      "expected_value": 95.0,
+      "actual_value": 87.0,
+      "measurement_date": "2025-01-01",
+      "measurement_period": "quarterly",
+      "impact_type": "downstream"
+    }
+  ]
+}

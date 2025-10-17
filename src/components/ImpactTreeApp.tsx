@@ -108,6 +108,9 @@ export function ImpactTreeApp() {
     timestamp: number;
   } | null>(null);
 
+  // File input ref for import functionality
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Update mouse position on every move
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -306,6 +309,170 @@ export function ImpactTreeApp() {
     link.click();
 
     URL.revokeObjectURL(url);
+  };
+
+  /**
+   * Triggers file picker for importing JSON data
+   */
+  const handleImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  /**
+   * Validates imported tree data structure
+   * @param data - The parsed JSON data to validate
+   * @returns Validation result with errors if any
+   */
+  const validateImportedData = (data: unknown): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    // Check basic structure
+    if (!data || typeof data !== 'object') {
+      errors.push('Invalid data format: expected an object');
+      return { isValid: false, errors };
+    }
+
+    const treeData = data as Record<string, unknown>;
+
+    // Validate tree
+    if (!treeData.tree || typeof treeData.tree !== 'object') {
+      errors.push('Missing or invalid tree data');
+    } else {
+      const tree = treeData.tree as Record<string, unknown>;
+      const requiredTreeFields = ['id', 'name', 'description', 'created_date', 'updated_date', 'owner'];
+      requiredTreeFields.forEach(field => {
+        if (!(field in tree)) {
+          errors.push(`Tree missing required field: ${field}`);
+        }
+      });
+    }
+
+    // Validate nodes array
+    if (!Array.isArray(treeData.nodes)) {
+      errors.push('Missing or invalid nodes array');
+    } else {
+      treeData.nodes.forEach((node: unknown, index: number) => {
+        if (typeof node !== 'object' || node === null) {
+          errors.push(`Node ${index} is not a valid object`);
+          return;
+        }
+        const nodeObj = node as Record<string, unknown>;
+        const requiredNodeFields = ['id', 'name', 'description', 'node_type', 'level', 'position_x', 'position_y', 'color', 'shape'];
+        requiredNodeFields.forEach(field => {
+          if (!(field in nodeObj)) {
+            errors.push(`Node ${index} missing required field: ${field}`);
+          }
+        });
+        if (nodeObj.node_type && typeof nodeObj.node_type === 'string' && !['business_metric', 'product_metric', 'initiative'].includes(nodeObj.node_type)) {
+          errors.push(`Node ${index} has invalid node_type: ${nodeObj.node_type}`);
+        }
+        if (nodeObj.shape && typeof nodeObj.shape === 'string' && !['rectangle', 'ellipse'].includes(nodeObj.shape)) {
+          errors.push(`Node ${index} has invalid shape: ${nodeObj.shape}`);
+        }
+      });
+    }
+
+    // Validate relationships array
+    if (!Array.isArray(treeData.relationships)) {
+      errors.push('Missing or invalid relationships array');
+    } else {
+      treeData.relationships.forEach((rel: unknown, index: number) => {
+        if (typeof rel !== 'object' || rel === null) {
+          errors.push(`Relationship ${index} is not a valid object`);
+          return;
+        }
+        const relObj = rel as Record<string, unknown>;
+        const requiredRelFields = ['id', 'source_node_id', 'target_node_id', 'relationship_type', 'color', 'strength'];
+        requiredRelFields.forEach(field => {
+          if (!(field in relObj)) {
+            errors.push(`Relationship ${index} missing required field: ${field}`);
+          }
+        });
+        if (relObj.relationship_type && typeof relObj.relationship_type === 'string' && !['desirable_effect', 'undesirable_effect', 'rollup'].includes(relObj.relationship_type)) {
+          errors.push(`Relationship ${index} has invalid relationship_type: ${relObj.relationship_type}`);
+        }
+      });
+    }
+
+    // Validate measurements array
+    if (!Array.isArray(treeData.measurements)) {
+      errors.push('Missing or invalid measurements array');
+    } else {
+      treeData.measurements.forEach((meas: unknown, index: number) => {
+        if (typeof meas !== 'object' || meas === null) {
+          errors.push(`Measurement ${index} is not a valid object`);
+          return;
+        }
+        const measObj = meas as Record<string, unknown>;
+        const requiredMeasFields = ['id', 'node_id', 'metric_name', 'expected_value', 'actual_value', 'measurement_date', 'impact_type'];
+        requiredMeasFields.forEach(field => {
+          if (!(field in measObj)) {
+            errors.push(`Measurement ${index} missing required field: ${field}`);
+          }
+        });
+        if (measObj.impact_type && typeof measObj.impact_type === 'string' && !['proximate', 'downstream'].includes(measObj.impact_type)) {
+          errors.push(`Measurement ${index} has invalid impact_type: ${measObj.impact_type}`);
+        }
+      });
+    }
+
+    return { isValid: errors.length === 0, errors };
+  };
+
+  /**
+   * Processes the selected file and imports the tree data
+   * @param event - File input change event
+   */
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+      alert('Please select a valid JSON file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+
+        // Validate the data
+        const validation = validateImportedData(data);
+        if (!validation.isValid) {
+          alert(`Import failed:\n${validation.errors.join('\n')}`);
+          return;
+        }
+
+        // Import the data
+        setTree(data.tree);
+        setNodes(new Map(data.nodes.map((n: Node) => [n.id, n])));
+        setRelationships(new Map(data.relationships.map((r: Relationship) => [r.id, r])));
+        setMeasurements(new Map(data.measurements.map((m: Measurement) => [m.id, m])));
+
+        // Reset UI state
+        setSelectedNodeId(null);
+        setSelectedRelationshipId(null);
+        setMode('select');
+        setSelectedNodeType(null);
+        setConnectSourceNodeId(null);
+        setViewBox({ x: 0, y: 0, width: 1200, height: 800, scale: 1 });
+
+        alert('Tree imported successfully!');
+      } catch (error) {
+        alert(`Failed to parse JSON file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    };
+
+    reader.onerror = () => {
+      alert('Failed to read the file');
+    };
+
+    reader.readAsText(file);
+
+    // Reset the input so the same file can be selected again
+    event.target.value = '';
   };
 
   /**
@@ -763,7 +930,7 @@ export function ImpactTreeApp() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleImport}>
                     <Upload className="h-4 w-4 mr-2" />
                     Load
                   </Button>
@@ -916,6 +1083,15 @@ export function ImpactTreeApp() {
           </div>
         ) : null}
       </DragOverlay>
+
+      {/* Hidden file input for import functionality */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        onChange={handleFileSelect}
+        style={{ display: 'none' }}
+      />
     </DndContext>
   );
 }

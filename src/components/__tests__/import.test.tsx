@@ -1,0 +1,133 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { ImpactTreeApp } from "../ImpactTreeApp";
+
+// Mock FileReader
+const mockFileReader = {
+  readAsText: vi.fn(),
+  onload: null as ((event: ProgressEvent<FileReader>) => void) | null,
+  onerror: null as ((event: ProgressEvent<FileReader>) => void) | null,
+  result: null as string | ArrayBuffer | null,
+};
+
+global.FileReader = vi.fn(() => mockFileReader) as any;
+
+// Mock URL.createObjectURL and revokeObjectURL
+global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+global.URL.revokeObjectURL = vi.fn();
+
+// Mock alert
+global.alert = vi.fn();
+
+describe("Import Functionality", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should render the Load button", () => {
+    render(<ImpactTreeApp />);
+    expect(screen.getByRole("button", { name: /load/i })).toBeInTheDocument();
+  });
+
+  it("should trigger file input when Load button is clicked", async () => {
+    render(<ImpactTreeApp />);
+
+    const loadButton = screen.getByRole("button", { name: /load/i });
+
+    // Mock the file input click
+    const mockClick = vi.fn();
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click = mockClick;
+    }
+
+    await userEvent.click(loadButton);
+    expect(mockClick).toHaveBeenCalled();
+  });
+
+  it("should validate and import valid JSON data", () => {
+    render(<ImpactTreeApp />);
+
+    const validJsonData = {
+      tree: {
+        id: "tree_test",
+        name: "Test Tree",
+        description: "Test description",
+        created_date: "2025-01-01",
+        updated_date: "2025-01-01",
+        owner: "Test User"
+      },
+      nodes: [
+        {
+          id: "node_test",
+          name: "Test Node",
+          description: "Test node",
+          node_type: "business_metric" as const,
+          level: 1,
+          position_x: 100,
+          position_y: 100,
+          color: "#000000",
+          shape: "rectangle" as const
+        }
+      ],
+      relationships: [],
+      measurements: []
+    };
+
+    // Mock file selection
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const mockFile = new File([JSON.stringify(validJsonData)], 'test.json', { type: 'application/json' });
+
+    // Simulate file selection
+    fireEvent.change(fileInput, { target: { files: [mockFile] } });
+
+    // Simulate successful file read
+    mockFileReader.result = JSON.stringify(validJsonData);
+    mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
+
+    // Check that alert was called with success message
+    expect(global.alert).toHaveBeenCalledWith('Tree imported successfully!');
+  });
+
+  it("should show error for invalid JSON", () => {
+    render(<ImpactTreeApp />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const mockFile = new File(['invalid json'], 'test.json', { type: 'application/json' });
+
+    // Simulate file selection
+    fireEvent.change(fileInput, { target: { files: [mockFile] } });
+
+    // Simulate file read with invalid JSON
+    mockFileReader.result = 'invalid json';
+    mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
+
+    // Check that alert was called with error message
+    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining('Failed to parse JSON file'));
+  });
+
+  it("should validate data structure", () => {
+    render(<ImpactTreeApp />);
+
+    const invalidData = {
+      tree: {}, // Missing required fields
+      nodes: [],
+      relationships: [],
+      measurements: []
+    };
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const mockFile = new File([JSON.stringify(invalidData)], 'test.json', { type: 'application/json' });
+
+    // Simulate file selection
+    fireEvent.change(fileInput, { target: { files: [mockFile] } });
+
+    // Simulate successful file read
+    mockFileReader.result = JSON.stringify(invalidData);
+    mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
+
+    // Check that alert was called with validation errors
+    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining('Import failed'));
+  });
+});
