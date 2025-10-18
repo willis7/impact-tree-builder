@@ -27,6 +27,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ZoomIn,
   ZoomOut,
   Maximize2,
@@ -36,7 +42,9 @@ import {
   Upload,
   HelpCircle,
   Plus,
+  ChevronDown,
 } from "lucide-react";
+import { exportAsJSON, exportAsPNG, exportAsHTML } from "@/lib/export-utils";
 import { ThemeToggle } from "./theme-toggle";
 import { ImpactCanvas } from "./ImpactCanvas";
 import { Sidebar } from "./Sidebar";
@@ -122,6 +130,70 @@ export function ImpactTreeApp() {
 
   // File input ref for import functionality
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * Determines relationship type and color based on source node type
+   * @param sourceNode - The source node for the relationship
+   * @returns Object containing relationship type and color
+   */
+  const getRelationshipTypeAndColor = (sourceNode: Node) => {
+    let relationshipType:
+      | "desirable_effect"
+      | "undesirable_effect"
+      | "rollup" = "rollup";
+
+    if (sourceNode.node_type === "initiative") {
+      // Check if it's positive or negative initiative
+      const sourceColor = sourceNode.color;
+      if (sourceColor === "#FF6F00") {
+        relationshipType = "desirable_effect";
+      } else if (sourceColor === "#D32F2F") {
+        relationshipType = "undesirable_effect";
+      }
+    }
+
+    const color =
+      relationshipType === "desirable_effect"
+        ? "#4CAF50"
+        : relationshipType === "undesirable_effect"
+        ? "#F44336"
+        : "#9E9E9E";
+
+    return { relationshipType, color };
+  };
+
+  /**
+   * Creates a new tree with current date and default metadata
+   */
+  const createNewTree = (): ImpactTree => {
+    const now = new Date();
+    const dateString = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    return {
+      id: `tree_${Date.now()}`,
+      name: "New Impact Tree",
+      description: "A new impact analysis tree",
+      created_date: dateString,
+      updated_date: dateString,
+      owner: "User",
+    };
+  };
+
+  /**
+   * Creates a completely new tree, resetting all state
+   */
+  const handleNewTree = () => {
+    setTree(createNewTree());
+    setNodes(new Map());
+    setRelationships(new Map());
+    setMeasurements(new Map());
+    setSelectedNodeId(null);
+    setSelectedRelationshipId(null);
+    setMode("select");
+    setSelectedNodeType(null);
+    setConnectSourceNodeId(null);
+    setViewBox({ x: 0, y: 0, width: 1200, height: 800, scale: 1 });
+  };
 
   // Update mouse position on every move
   useEffect(() => {
@@ -326,26 +398,28 @@ export function ImpactTreeApp() {
 
   /**
    * Exports the tree as a JSON file
-   * Downloads a file containing all tree data for backup or sharing
    */
-  const handleExport = () => {
-    const data = {
-      tree,
-      nodes: Array.from(nodes.values()),
-      relationships: Array.from(relationships.values()),
-      measurements: Array.from(measurements.values()),
-    };
+  const handleExportJSON = () => {
+    exportAsJSON(tree, nodes, relationships, measurements);
+  };
 
-    const dataStr = JSON.stringify(data, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
+  /**
+   * Exports the tree visualization as a PNG image
+   */
+  const handleExportPNG = async () => {
+    try {
+      await exportAsPNG(tree, canvasElement);
+    } catch (error) {
+      console.error('PNG export failed:', error);
+      alert('Failed to export as PNG. Please try again.');
+    }
+  };
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${tree.name.replace(/\s+/g, "_")}.json`;
-    link.click();
-
-    URL.revokeObjectURL(url);
+  /**
+   * Exports the tree as an HTML page
+   */
+  const handleExportHTML = () => {
+    exportAsHTML(tree, nodes, relationships, measurements);
   };
 
   /**
@@ -669,21 +743,8 @@ export function ImpactTreeApp() {
         return;
       }
 
-      // Determine relationship type based on initiative type
-      let relationshipType:
-        | "desirable_effect"
-        | "undesirable_effect"
-        | "rollup" = "rollup";
-
-      if (sourceNode.node_type === "initiative") {
-        // Check if it's positive or negative initiative
-        const sourceColor = sourceNode.color;
-        if (sourceColor === "#FF6F00") {
-          relationshipType = "desirable_effect";
-        } else if (sourceColor === "#D32F2F") {
-          relationshipType = "undesirable_effect";
-        }
-      }
+      // Determine relationship type and color based on source node
+      const { relationshipType, color } = getRelationshipTypeAndColor(sourceNode);
 
       // Create complete relationship matching the Relationship type
       const newRelationship: Relationship = {
@@ -691,12 +752,7 @@ export function ImpactTreeApp() {
         source_node_id: sourceNodeId,
         target_node_id: targetNodeId,
         relationship_type: relationshipType,
-        color:
-          relationshipType === "desirable_effect"
-            ? "#4CAF50"
-            : relationshipType === "undesirable_effect"
-            ? "#F44336"
-            : "#9E9E9E",
+        color,
         strength: 1,
       };
 
@@ -731,33 +787,15 @@ export function ImpactTreeApp() {
       const targetNode = nodes.get(nodeId);
 
       if (sourceNode && targetNode) {
-        // Determine relationship type based on initiative type
-        let relationshipType:
-          | "desirable_effect"
-          | "undesirable_effect"
-          | "rollup" = "rollup";
-
-        if (sourceNode.node_type === "initiative") {
-          // Check if it's positive or negative initiative
-          const sourceColor = sourceNode.color;
-          if (sourceColor === "#FF6F00") {
-            relationshipType = "desirable_effect";
-          } else if (sourceColor === "#D32F2F") {
-            relationshipType = "undesirable_effect";
-          }
-        }
+        // Determine relationship type and color based on source node
+        const { relationshipType, color } = getRelationshipTypeAndColor(sourceNode);
 
         const newRelationship: Relationship = {
           id: "rel_" + Date.now(),
           source_node_id: connectSourceNodeId,
           target_node_id: nodeId,
           relationship_type: relationshipType,
-          color:
-            relationshipType === "desirable_effect"
-              ? "#4CAF50"
-              : relationshipType === "undesirable_effect"
-              ? "#F44336"
-              : "#2196F3",
+          color,
           strength: 1,
         };
 
@@ -943,11 +981,11 @@ export function ImpactTreeApp() {
             <div className="flex gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setNodes(new Map())}
-                  >
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={handleNewTree}
+                   >
                     <Plus className="h-4 w-4 mr-2" />
                     New
                   </Button>
@@ -975,15 +1013,34 @@ export function ImpactTreeApp() {
                 <TooltipContent>Load tree from file</TooltipContent>
               </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={handleExport}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Export tree as JSON</TooltipContent>
-              </Tooltip>
+               <DropdownMenu>
+                 <Tooltip>
+                   <TooltipTrigger asChild>
+                     <DropdownMenuTrigger asChild>
+                       <Button variant="outline" size="sm">
+                         <Download className="h-4 w-4 mr-2" />
+                         Export
+                         <ChevronDown className="h-3 w-3 ml-1" />
+                       </Button>
+                     </DropdownMenuTrigger>
+                   </TooltipTrigger>
+                   <TooltipContent>Export tree in different formats</TooltipContent>
+                 </Tooltip>
+                 <DropdownMenuContent align="end">
+                   <DropdownMenuItem onClick={handleExportJSON}>
+                     <Download className="h-4 w-4 mr-2" />
+                     Export as JSON
+                   </DropdownMenuItem>
+                   <DropdownMenuItem onClick={handleExportPNG}>
+                     <Download className="h-4 w-4 mr-2" />
+                     Export as PNG
+                   </DropdownMenuItem>
+                   <DropdownMenuItem onClick={handleExportHTML}>
+                     <Download className="h-4 w-4 mr-2" />
+                     Export as HTML
+                   </DropdownMenuItem>
+                 </DropdownMenuContent>
+               </DropdownMenu>
 
               <Tooltip>
                 <TooltipTrigger asChild>

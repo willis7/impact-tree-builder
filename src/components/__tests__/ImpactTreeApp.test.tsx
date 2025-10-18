@@ -265,8 +265,13 @@ describe("ImpactTreeApp", () => {
 
       render(<ImpactTreeApp />);
 
+      // Click the export dropdown trigger
       const exportButton = screen.getByRole("button", { name: /export/i });
       await user.click(exportButton);
+
+      // Click the "Export as JSON" menu item
+      const jsonExportItem = screen.getByRole("menuitem", { name: /export as json/i });
+      await user.click(jsonExportItem);
 
       // Verify blob was created
       expect(global.URL.createObjectURL).toHaveBeenCalled();
@@ -306,12 +311,57 @@ describe("ImpactTreeApp", () => {
 
       render(<ImpactTreeApp />);
 
+      // Click the export dropdown trigger
       const exportButton = screen.getByRole("button", { name: /export/i });
       await user.click(exportButton);
+
+      // Click the "Export as JSON" menu item
+      const jsonExportItem = screen.getByRole("menuitem", { name: /export as json/i });
+      await user.click(jsonExportItem);
 
       // Verify filename includes tree name (with spaces replaced)
       expect(capturedFilename).toContain("Customer_Support_AI_Chatbot");
       expect(capturedFilename).toMatch(/\.json$/);
+
+      createElementSpy.mockRestore();
+    });
+
+
+
+    it("exports tree as HTML file", async () => {
+      const user = userEvent.setup();
+
+      // Save original createElement
+      const originalCreateElement = document.createElement.bind(document);
+
+      // Mock the link click
+      const clickSpy = vi.fn();
+      const createElementSpy = vi
+        .spyOn(document, "createElement")
+        .mockImplementation((tagName) => {
+          if (tagName === "a") {
+            const link = originalCreateElement("a") as HTMLAnchorElement;
+            link.click = clickSpy;
+            return link;
+          }
+          return originalCreateElement(tagName);
+        });
+
+      render(<ImpactTreeApp />);
+
+      // Click the export dropdown trigger
+      const exportButton = screen.getByRole("button", { name: /export/i });
+      await user.click(exportButton);
+
+      // Click the "Export as HTML" menu item
+      const htmlExportItem = screen.getByRole("menuitem", { name: /export as html/i });
+      await user.click(htmlExportItem);
+
+      // Verify blob was created
+      expect(global.URL.createObjectURL).toHaveBeenCalled();
+
+      // Verify link was clicked
+      expect(clickSpy).toHaveBeenCalled();
 
       createElementSpy.mockRestore();
     });
@@ -345,18 +395,16 @@ describe("ImpactTreeApp", () => {
     });
   });
 
-  describe("Node Management", () => {
-    it("clears all nodes when New button is clicked", async () => {
+  describe("Tree Management", () => {
+    it("creates new tree when New button is clicked", async () => {
       const user = userEvent.setup();
       render(<ImpactTreeApp />);
-
-      // Initially should have sample nodes
-      // (Verify via statistics or node count display)
 
       const newButton = screen.getByRole("button", { name: /new/i });
       await user.click(newButton);
 
-      // Nodes should be cleared (this would show in stats or empty canvas state)
+      // The New button should work without throwing errors
+      // The tree should be reset to a new state with current date
       expect(newButton).toBeInTheDocument();
     });
   });

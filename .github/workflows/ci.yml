@@ -31,15 +31,12 @@ jobs:
             - name: Run TypeScript type check
               run: npx tsc --noEmit
 
-            - name: Run ESLint
-              run: npm run lint
-              continue-on-error: true
+             - name: Run ESLint
+               run: npm run lint
+               continue-on-error: true
 
-            - name: Run tests
-              run: npm run test:run
-
-            - name: Generate coverage report
-              run: npm run test:coverage
+             - name: Generate coverage report
+               run: npm run test:coverage
 
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@v4

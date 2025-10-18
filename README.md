@@ -23,7 +23,7 @@ A modern, fully-featured impact tree visualization tool built with React, TypeSc
 - ✅ Measurement tracking with performance indicators
 - ✅ Canvas controls (zoom, pan, reset, center)
 - ✅ Save/Load functionality
-- ✅ Export to JSON
+- ✅ Export to JSON, PNG, and HTML
 - ✅ Real-time statistics
 
 ### Modern Enhancements
@@ -93,6 +93,7 @@ src/
 │   │   ├── textarea.tsx
 │   │   ├── dialog.tsx
 │   │   ├── card.tsx
+│   │   ├── dropdown-menu.tsx
 │   │   └── label.tsx
 │   ├── ImpactTreeApp.tsx     # Main application component
 │   ├── ImpactCanvas.tsx       # SVG canvas with nodes and relationships
@@ -101,6 +102,7 @@ src/
 ├── data/
 │   └── sampleData.ts          # Sample impact tree data
 ├── lib/
+│   ├── export-utils.ts        # Export functionality (JSON, PNG, HTML)
 │   └── utils.ts               # Utility functions
 ├── types/
 │   └── index.ts               # TypeScript type definitions
@@ -188,7 +190,7 @@ src/
 
 - **Save** - Saves to browser localStorage
 - **Load** - Loads from browser localStorage
-- **Export** - Downloads as JSON file
+- **Export** - Downloads as JSON, PNG image, or self-contained HTML file
 
 ## 📦 Building for Production
 
