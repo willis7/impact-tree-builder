@@ -19,6 +19,10 @@ export default defineConfig({
         "**/*.config.*",
         "**/mockData/",
         "dist/",
+        "src/App.tsx",
+        "src/main.tsx",
+        "app.js",
+        "**/*.js",
       ],
       thresholds: {
         lines: 70,

@@ -7,9 +7,13 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
+
 import { useDragNode } from "@/hooks/useDragNode";
 import { useCanvasAutoPan } from "@/hooks/useCanvasAutoPan";
+import { useNodeOperations } from "@/hooks/useNodeOperations";
+import { useCanvasOperations } from "@/hooks/useCanvasOperations";
+import { useDragOperations } from "@/hooks/useDragOperations";
+import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -45,6 +49,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { exportAsJSON, exportAsPNG, exportAsHTML } from "@/lib/export-utils";
+import { validateImportedData } from "@/lib/validation-utils";
 import { ThemeToggle } from "./theme-toggle";
 import { ImpactCanvas } from "./ImpactCanvas";
 import { Sidebar } from "./Sidebar";
@@ -107,9 +112,7 @@ export function ImpactTreeApp() {
     null
   );
 
-  // Zoom constraints
-  const MIN_ZOOM = 0.1; // 10% of original size
-  const MAX_ZOOM = 5.0; // 500% of original size
+
 
   // Track real-time mouse position for accurate drop coordinates
   const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -120,47 +123,8 @@ export function ImpactTreeApp() {
   // Track when last drag ended to prevent click events from firing immediately after
   const lastDragEndTimeRef = useRef<number>(0);
 
-  // Track last created node to prevent exact duplicates
-  const lastCreatedNodeRef = useRef<{
-    x: number;
-    y: number;
-    type: string;
-    timestamp: number;
-  } | null>(null);
-
   // File input ref for import functionality
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  /**
-   * Determines relationship type and color based on source node type
-   * @param sourceNode - The source node for the relationship
-   * @returns Object containing relationship type and color
-   */
-  const getRelationshipTypeAndColor = (sourceNode: Node) => {
-    let relationshipType:
-      | "desirable_effect"
-      | "undesirable_effect"
-      | "rollup" = "rollup";
-
-    if (sourceNode.node_type === "initiative") {
-      // Check if it's positive or negative initiative
-      const sourceColor = sourceNode.color;
-      if (sourceColor === "#FF6F00") {
-        relationshipType = "desirable_effect";
-      } else if (sourceColor === "#D32F2F") {
-        relationshipType = "undesirable_effect";
-      }
-    }
-
-    const color =
-      relationshipType === "desirable_effect"
-        ? "#4CAF50"
-        : relationshipType === "undesirable_effect"
-        ? "#F44336"
-        : "#9E9E9E";
-
-    return { relationshipType, color };
-  };
 
   /**
    * Creates a new tree with current date and default metadata
@@ -204,114 +168,84 @@ export function ImpactTreeApp() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // Drag-and-drop hook for node creation
-  const { dragState, startDrag, endDrag, cancelDrag } = useDragNode({
-    onNodeCreate: (nodeType, position) => {
-      // Pass nodeType directly to handleAddNode to avoid async setState issues
-      handleAddNode(position.x, position.y, nodeType);
-    },
-  });
+   // Node operations hook
+   const nodeOperations = useNodeOperations(
+     {
+       nodes,
+       relationships,
+       measurements,
+       selectedNodeId,
+       mode,
+       selectedNodeType,
+       connectSourceNodeId,
+     },
+     {
+       setNodes,
+       setRelationships,
+       setMeasurements,
+       setSelectedNodeId,
+       setMode,
+       setSelectedNodeType,
+       setConnectSourceNodeId,
+     }
+   );
 
-  // Auto-pan when dragging near viewport edges
-  useCanvasAutoPan({
-    canvasElement,
-    isDragging: dragState.isDragging,
-    cursorPositionRef: mousePositionRef,
-    onPan: (deltaX, deltaY) => {
-      setViewBox((prev) => ({
-        ...prev,
-        x: prev.x + deltaX,
-        y: prev.y + deltaY,
-      }));
-    },
-    viewBox,
-  });
+   // Drag-and-drop hook for node creation
+   const { dragState, startDrag, endDrag, cancelDrag } = useDragNode({
+     onNodeCreate: (nodeType, position) => {
+       // Pass nodeType directly to handleAddNode to avoid async setState issues
+       nodeOperations.addNode(position.x, position.y, nodeType);
+     },
+   });
 
-  // T109-T118: Keyboard shortcuts for node types and modes
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in input fields
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
-        return;
-      }
+   // Canvas operations hook
+   const canvasOperations = useCanvasOperations(
+     { viewBox, nodes },
+     { setViewBox }
+   );
 
-      // T116: Escape key - cancel current operation
-      if (e.key === "Escape") {
-        if (dragState.isDragging) {
-          cancelDrag();
-        } else if (mode === "connect") {
-          setMode("select");
-          setConnectSourceNodeId(null);
-        } else if (mode === "add-node") {
-          setMode("select");
-          setSelectedNodeType(null);
-        }
-        return;
-      }
+   // Drag operations hook
+   const dragOperations = useDragOperations(
+     { viewBox, dragState },
+     {
+       startDrag,
+       endDrag,
+       cancelDrag,
+       setLastDragEndTime: (time: number) => {
+         lastDragEndTimeRef.current = time;
+       },
+     },
+     canvasElement,
+     mousePositionRef,
+     lastDragIdRef
+   );
 
-      // T110: 'b' key - Business Metric
-      if (e.key === "b" || e.key === "B") {
-        setSelectedNodeType("business_metric");
-        setMode("add-node");
-        e.preventDefault();
-        return;
-      }
+   // Auto-pan when dragging near viewport edges
+   useCanvasAutoPan({
+     canvasElement,
+     isDragging: dragState.isDragging,
+     cursorPositionRef: mousePositionRef,
+     viewBox,
+     onPan: (deltaX, deltaY) => {
+       setViewBox((prev) => ({
+         ...prev,
+         x: prev.x + deltaX,
+         y: prev.y + deltaY,
+       }));
+     },
+   });
 
-      // T111: 'p' key - Product Metric
-      if (e.key === "p" || e.key === "P") {
-        setSelectedNodeType("product_metric");
-        setMode("add-node");
-        e.preventDefault();
-        return;
-      }
-
-      // T112: 'i' key - Initiative (positive)
-      if (e.key === "i" || e.key === "I") {
-        setSelectedNodeType("initiative_positive");
-        setMode("add-node");
-        e.preventDefault();
-        return;
-      }
-
-      // T113: 'n' key - Initiative (negative)
-      if (e.key === "n" || e.key === "N") {
-        setSelectedNodeType("initiative_negative");
-        setMode("add-node");
-        e.preventDefault();
-        return;
-      }
-
-      // T117: 'c' key - Connect Nodes mode
-      if (e.key === "c" || e.key === "C") {
-        setMode("connect");
-        setSelectedNodeType(null);
-        e.preventDefault();
-        return;
-      }
-
-      // T118: 's' key - Select mode
-      if (e.key === "s" || e.key === "S") {
-        setMode("select");
-        setSelectedNodeType(null);
-        setConnectSourceNodeId(null);
-        e.preventDefault();
-        return;
-      }
-
-      // F1 key - Open help dialog
-      if (e.key === "F1") {
-        setHelpDialogOpen(true);
-        e.preventDefault();
-        return;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [dragState.isDragging, mode, cancelDrag, setHelpDialogOpen]);
+   // Keyboard navigation hook
+   useKeyboardNavigation(
+     { mode, dragState },
+     {
+       cancelDrag,
+       setMode,
+       setSelectedNodeType,
+       setConnectSourceNodeId,
+       setHelpDialogOpen,
+     }
+   );
 
   // Configure drag sensors for @dnd-kit
   const mouseSensor = useSensor(MouseSensor, {
@@ -322,64 +256,7 @@ export function ImpactTreeApp() {
   const keyboardSensor = useSensor(KeyboardSensor);
   const sensors = useSensors(mouseSensor, keyboardSensor);
 
-  /**
-   * Adjusts the canvas zoom level
-   * @param factor - Multiplier for the current scale (e.g., 1.2 to zoom in, 0.8 to zoom out)
-   */
-  const handleZoom = (factor: number, centerX?: number, centerY?: number) => {
-    setViewBox((prev) => {
-      const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev.scale * factor));
 
-      // If center coordinates provided, adjust viewBox position to zoom toward center
-      if (centerX !== undefined && centerY !== undefined) {
-        const scaleChange = newScale / prev.scale;
-        const newX = centerX - (centerX - prev.x) * scaleChange;
-        const newY = centerY - (centerY - prev.y) * scaleChange;
-
-        return {
-          ...prev,
-          x: newX,
-          y: newY,
-          scale: newScale,
-        };
-      }
-
-      return {
-        ...prev,
-        scale: newScale,
-      };
-    });
-  };
-
-  /**
-   * Resets the canvas view to default position and zoom
-   */
-  const handleResetView = () => {
-    setViewBox({ x: 0, y: 0, width: 1200, height: 800, scale: 1 });
-  };
-
-  /**
-   * Centers the view on all nodes in the tree
-   * Calculates the bounding box of all nodes and centers the viewBox
-   */
-  const handleCenterView = () => {
-    if (nodes.size === 0) return;
-
-    const nodeArray = Array.from(nodes.values());
-    const minX = Math.min(...nodeArray.map((n) => n.position_x));
-    const maxX = Math.max(...nodeArray.map((n) => n.position_x));
-    const minY = Math.min(...nodeArray.map((n) => n.position_y));
-    const maxY = Math.max(...nodeArray.map((n) => n.position_y));
-
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-
-    setViewBox((prev) => ({
-      ...prev,
-      x: centerX - prev.width / 2,
-      y: centerY - prev.height / 2,
-    }));
-  };
 
   /**
    * Saves the current tree state to localStorage
@@ -429,106 +306,7 @@ export function ImpactTreeApp() {
     fileInputRef.current?.click();
   };
 
-  /**
-   * Validates imported tree data structure
-   * @param data - The parsed JSON data to validate
-   * @returns Validation result with errors if any
-   */
-  const validateImportedData = (data: unknown): { isValid: boolean; errors: string[] } => {
-    const errors: string[] = [];
 
-    // Check basic structure
-    if (!data || typeof data !== 'object') {
-      errors.push('Invalid data format: expected an object');
-      return { isValid: false, errors };
-    }
-
-    const treeData = data as Record<string, unknown>;
-
-    // Validate tree
-    if (!treeData.tree || typeof treeData.tree !== 'object') {
-      errors.push('Missing or invalid tree data');
-    } else {
-      const tree = treeData.tree as Record<string, unknown>;
-      const requiredTreeFields = ['id', 'name', 'description', 'created_date', 'updated_date', 'owner'];
-      requiredTreeFields.forEach(field => {
-        if (!(field in tree)) {
-          errors.push(`Tree missing required field: ${field}`);
-        }
-      });
-    }
-
-    // Validate nodes array
-    if (!Array.isArray(treeData.nodes)) {
-      errors.push('Missing or invalid nodes array');
-    } else {
-      treeData.nodes.forEach((node: unknown, index: number) => {
-        if (typeof node !== 'object' || node === null) {
-          errors.push(`Node ${index} is not a valid object`);
-          return;
-        }
-        const nodeObj = node as Record<string, unknown>;
-        const requiredNodeFields = ['id', 'name', 'description', 'node_type', 'level', 'position_x', 'position_y', 'color', 'shape'];
-        requiredNodeFields.forEach(field => {
-          if (!(field in nodeObj)) {
-            errors.push(`Node ${index} missing required field: ${field}`);
-          }
-        });
-        if (nodeObj.node_type && typeof nodeObj.node_type === 'string' && !['business_metric', 'product_metric', 'initiative'].includes(nodeObj.node_type)) {
-          errors.push(`Node ${index} has invalid node_type: ${nodeObj.node_type}`);
-        }
-        if (nodeObj.shape && typeof nodeObj.shape === 'string' && !['rectangle', 'ellipse'].includes(nodeObj.shape)) {
-          errors.push(`Node ${index} has invalid shape: ${nodeObj.shape}`);
-        }
-      });
-    }
-
-    // Validate relationships array
-    if (!Array.isArray(treeData.relationships)) {
-      errors.push('Missing or invalid relationships array');
-    } else {
-      treeData.relationships.forEach((rel: unknown, index: number) => {
-        if (typeof rel !== 'object' || rel === null) {
-          errors.push(`Relationship ${index} is not a valid object`);
-          return;
-        }
-        const relObj = rel as Record<string, unknown>;
-        const requiredRelFields = ['id', 'source_node_id', 'target_node_id', 'relationship_type', 'color', 'strength'];
-        requiredRelFields.forEach(field => {
-          if (!(field in relObj)) {
-            errors.push(`Relationship ${index} missing required field: ${field}`);
-          }
-        });
-        if (relObj.relationship_type && typeof relObj.relationship_type === 'string' && !['desirable_effect', 'undesirable_effect', 'rollup'].includes(relObj.relationship_type)) {
-          errors.push(`Relationship ${index} has invalid relationship_type: ${relObj.relationship_type}`);
-        }
-      });
-    }
-
-    // Validate measurements array
-    if (!Array.isArray(treeData.measurements)) {
-      errors.push('Missing or invalid measurements array');
-    } else {
-      treeData.measurements.forEach((meas: unknown, index: number) => {
-        if (typeof meas !== 'object' || meas === null) {
-          errors.push(`Measurement ${index} is not a valid object`);
-          return;
-        }
-        const measObj = meas as Record<string, unknown>;
-        const requiredMeasFields = ['id', 'node_id', 'metric_name', 'expected_value', 'actual_value', 'measurement_date', 'impact_type'];
-        requiredMeasFields.forEach(field => {
-          if (!(field in measObj)) {
-            errors.push(`Measurement ${index} missing required field: ${field}`);
-          }
-        });
-        if (measObj.impact_type && typeof measObj.impact_type === 'string' && !['proximate', 'downstream'].includes(measObj.impact_type)) {
-          errors.push(`Measurement ${index} has invalid impact_type: ${measObj.impact_type}`);
-        }
-      });
-    }
-
-    return { isValid: errors.length === 0, errors };
-  };
 
   /**
    * Processes the selected file and imports the tree data
@@ -586,339 +364,17 @@ export function ImpactTreeApp() {
     event.target.value = '';
   };
 
-  /**
-   * Adds a new node to the tree at the specified canvas coordinates
-   * Automatically assigns color and shape based on node type
-   * @param x - Canvas X coordinate for node position
-   * @param y - Canvas Y coordinate for node position
-   * @param nodeType - Optional node type to use (if not provided, uses selectedNodeType)
-   */
-  const handleAddNode = (x: number, y: number, nodeType?: string) => {
-    const typeToUse = nodeType || selectedNodeType;
-    if (!typeToUse) return;
 
-    // Check for duplicate node creation (same position, type, within 500ms)
-    const now = Date.now();
-    if (lastCreatedNodeRef.current) {
-      const timeDiff = now - lastCreatedNodeRef.current.timestamp;
-      const xDiff = Math.abs(x - lastCreatedNodeRef.current.x);
-      const yDiff = Math.abs(y - lastCreatedNodeRef.current.y);
-      const isSameType = typeToUse === lastCreatedNodeRef.current.type;
 
-      // If node is at nearly same position (within 5 units) and same type within 500ms, it's a duplicate
-      if (timeDiff < 500 && xDiff < 5 && yDiff < 5 && isSameType) {
-        return;
-      }
-    }
 
-    const nodeId = "node_" + Date.now();
 
-    // Record this node creation
-    lastCreatedNodeRef.current = {
-      x,
-      y,
-      type: typeToUse,
-      timestamp: now,
-    };
 
-    let color, shape, level;
 
-    switch (typeToUse) {
-      case "business_metric":
-        color = "#2E7D32";
-        shape = "rectangle" as const;
-        level = 1;
-        break;
-      case "product_metric":
-        color = "#1976D2";
-        shape = "rectangle" as const;
-        level = 2;
-        break;
-      case "initiative_positive":
-        color = "#FF6F00";
-        shape = "ellipse" as const;
-        level = 3;
-        break;
-      case "initiative_negative":
-        color = "#D32F2F";
-        shape = "ellipse" as const;
-        level = 3;
-        break;
-      default:
-        color = "#1976D2";
-        shape = "rectangle" as const;
-        level = 2;
-    }
 
-    const newNode: Node = {
-      id: nodeId,
-      name: "New Node",
-      description: "",
-      node_type: typeToUse
-        .replace("_positive", "")
-        .replace("_negative", "") as Node["node_type"],
-      level,
-      position_x: x,
-      position_y: y,
-      color,
-      shape,
-    };
 
-    console.log("Creating node at:", { x, y, nodeId });
 
-    setNodes(new Map(nodes.set(nodeId, newNode)));
-    setSelectedNodeId(nodeId);
-    setMode("select");
-    setSelectedNodeType(null); // T047: Auto-deselect node type after placement
-  };
 
-  /**
-   * Updates properties of an existing node
-   * @param nodeId - ID of the node to update
-   * @param updates - Partial node object with properties to update
-   */
-  const handleUpdateNode = (nodeId: string, updates: Partial<Node>) => {
-    const node = nodes.get(nodeId);
-    if (!node) return;
 
-    const updatedNode = { ...node, ...updates };
-    setNodes(new Map(nodes.set(nodeId, updatedNode)));
-  };
-
-  const handleDeleteNode = (nodeId: string) => {
-    const newNodes = new Map(nodes);
-    newNodes.delete(nodeId);
-    setNodes(newNodes);
-
-    // Delete related relationships
-    const newRelationships = new Map(relationships);
-    Array.from(newRelationships.entries()).forEach(([id, rel]) => {
-      if (rel.source_node_id === nodeId || rel.target_node_id === nodeId) {
-        newRelationships.delete(id);
-      }
-    });
-    setRelationships(newRelationships);
-
-    // Delete related measurements
-    const newMeasurements = new Map(measurements);
-    Array.from(newMeasurements.entries()).forEach(([id, meas]) => {
-      if (meas.node_id === nodeId) {
-        newMeasurements.delete(id);
-      }
-    });
-    setMeasurements(newMeasurements);
-
-    setSelectedNodeId(null);
-  };
-
-  /**
-   * Creates a relationship directly between two nodes (used by drag-to-connect)
-   * @param sourceNodeId - ID of the source node
-   * @param targetNodeId - ID of the target node
-   */
-  const handleCreateRelationshipDirect = (
-    sourceNodeId: string,
-    targetNodeId: string
-  ) => {
-    if (mode !== "connect") return;
-
-    const sourceNode = nodes.get(sourceNodeId);
-    const targetNode = nodes.get(targetNodeId);
-
-    if (sourceNode && targetNode) {
-      // FR-020: Prevent self-relationships
-      if (sourceNodeId === targetNodeId) {
-        console.warn("Cannot create relationship from node to itself");
-        return;
-      }
-
-      // FR-015: Check for duplicate relationships
-      const existingRel = Array.from(relationships.values()).find(
-        (rel) =>
-          rel.source_node_id === sourceNodeId &&
-          rel.target_node_id === targetNodeId
-      );
-      if (existingRel) {
-        console.warn("Relationship already exists");
-        return;
-      }
-
-      // Determine relationship type and color based on source node
-      const { relationshipType, color } = getRelationshipTypeAndColor(sourceNode);
-
-      // Create complete relationship matching the Relationship type
-      const newRelationship: Relationship = {
-        id: `rel-${Date.now()}`,
-        source_node_id: sourceNodeId,
-        target_node_id: targetNodeId,
-        relationship_type: relationshipType,
-        color,
-        strength: 1,
-      };
-
-      setRelationships(
-        new Map(relationships.set(newRelationship.id, newRelationship))
-      );
-
-      // T082-T084: User Story 4 - Auto-deselect after relationship creation
-      setMode("select");
-      setConnectSourceNodeId(null);
-    }
-  };
-
-  /**
-   * Handles node click for relationship creation in connect mode
-   * @param nodeId - ID of the clicked node
-   */
-  const handleNodeClickForConnect = (nodeId: string) => {
-    if (mode !== "connect") return;
-
-    if (!connectSourceNodeId) {
-      // First click - set source node
-      setConnectSourceNodeId(nodeId);
-      setSelectedNodeId(nodeId);
-    } else if (connectSourceNodeId === nodeId) {
-      // Clicked same node - cancel
-      setConnectSourceNodeId(null);
-      setSelectedNodeId(null);
-    } else {
-      // Second click - create relationship
-      const sourceNode = nodes.get(connectSourceNodeId);
-      const targetNode = nodes.get(nodeId);
-
-      if (sourceNode && targetNode) {
-        // Determine relationship type and color based on source node
-        const { relationshipType, color } = getRelationshipTypeAndColor(sourceNode);
-
-        const newRelationship: Relationship = {
-          id: "rel_" + Date.now(),
-          source_node_id: connectSourceNodeId,
-          target_node_id: nodeId,
-          relationship_type: relationshipType,
-          color,
-          strength: 1,
-        };
-
-        setRelationships(
-          new Map(relationships.set(newRelationship.id, newRelationship))
-        );
-      }
-
-      // Reset connect mode state
-      setConnectSourceNodeId(null);
-      setMode("select");
-      setSelectedNodeId(nodeId);
-    }
-  };
-
-  /**
-   * Handles drag start event from DndContext
-   * Initiates drag with useDragNode hook
-   */
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-
-    // Reset the last drag ID for new drag operation
-    lastDragIdRef.current = null;
-
-    if (active?.data?.current?.nodeType) {
-      const nodeType = active.data.current.nodeType as NodeType;
-      // Start drag with initial cursor position (will be updated by DndContext)
-      startDrag(nodeType, { x: 0, y: 0 });
-    }
-  };
-
-  /**
-   * Handles the end of a drag operation
-   * Transforms coordinates and creates node at drop position
-   */
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { over, active, delta, activatorEvent } = event;
-
-    // Create a unique ID for this drag event to prevent duplicate processing
-    const dragEventId = `${active.id}-${Date.now()}`;
-
-    // Check if we've already processed this exact drag event
-    if (lastDragIdRef.current === dragEventId) {
-      return;
-    }
-
-    lastDragIdRef.current = dragEventId;
-
-    // Only create node if dropped over canvas and we have canvas element
-    if (
-      over?.id === "canvas-drop-zone" &&
-      canvasElement &&
-      dragState.isDragging
-    ) {
-      // Get mouse position - try activator + delta first, then fall back to ref
-      let screenX = mousePositionRef.current.x;
-      let screenY = mousePositionRef.current.y;
-
-      if (
-        activatorEvent &&
-        "clientX" in activatorEvent &&
-        "clientY" in activatorEvent &&
-        delta
-      ) {
-        // Use clientX/clientY (viewport coordinates) not screenX/screenY (monitor coordinates)
-        screenX = (activatorEvent.clientX as number) + delta.x;
-        screenY = (activatorEvent.clientY as number) + delta.y;
-      }
-
-      // Convert screen coordinates to canvas coordinates
-      // Try using SVG's native coordinate transformation first
-      let canvasX, canvasY;
-
-      if (canvasElement instanceof SVGSVGElement) {
-        try {
-          const pt = canvasElement.createSVGPoint();
-          pt.x = screenX;
-          pt.y = screenY;
-          const ctm = canvasElement.getScreenCTM();
-          if (ctm) {
-            const svgPoint = pt.matrixTransform(ctm.inverse());
-            canvasX = svgPoint.x;
-            canvasY = svgPoint.y;
-          }
-        } catch {
-          // SVG native transform failed, will use fallback
-        }
-      }
-
-      // Fallback to manual calculation if native transform failed
-      if (canvasX === undefined || canvasY === undefined) {
-        const rect = canvasElement.getBoundingClientRect();
-
-        // The actual viewBox dimensions on the SVG (scaled)
-        const actualViewBoxWidth = viewBox.width / viewBox.scale;
-        const actualViewBoxHeight = viewBox.height / viewBox.scale;
-
-        // Transform: screen -> normalized (0-1) -> viewBox coordinates
-        const normalizedX = (screenX - rect.left) / rect.width;
-        const normalizedY = (screenY - rect.top) / rect.height;
-
-        canvasX = viewBox.x + normalizedX * actualViewBoxWidth;
-        canvasY = viewBox.y + normalizedY * actualViewBoxHeight;
-      }
-
-      endDrag({ x: canvasX, y: canvasY });
-      // Set timestamp to prevent click events immediately after drag
-      lastDragEndTimeRef.current = Date.now();
-    } else {
-      // Cancelled - dropped outside canvas
-      endDrag(null);
-      lastDragEndTimeRef.current = Date.now();
-    }
-  };
-
-  /**
-   * Handles drag cancellation (Escape key or invalid drop)
-   * Calls hook's cancelDrag to reset state
-   */
-  const handleDragCancel = () => {
-    cancelDrag();
-  };
 
   /**
    * Gets the display label for a node type
@@ -961,9 +417,9 @@ export function ImpactTreeApp() {
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
+      onDragStart={dragOperations.handleDragStart}
+      onDragEnd={dragOperations.handleDragEnd}
+      onDragCancel={dragOperations.handleDragCancel}
     >
       <div className="h-screen flex flex-col bg-background">
         <TooltipProvider>
@@ -1261,16 +717,16 @@ export function ImpactTreeApp() {
                  selectedRelationshipId={selectedRelationshipId}
                  onNodeSelect={setSelectedNodeId}
                  onRelationshipSelect={setSelectedRelationshipId}
-                 onNodeMove={handleUpdateNode}
-                 onAddNode={handleAddNode}
+                  onNodeMove={nodeOperations.updateNode}
+                  onAddNode={nodeOperations.addNode}
                  mode={mode}
                  viewBox={viewBox}
                  onCanvasReady={setCanvasElement}
-                 onNodeClickForConnect={handleNodeClickForConnect}
+                  onNodeClickForConnect={nodeOperations.handleNodeClickForConnect}
                  connectSourceNodeId={connectSourceNodeId}
                  isDraggingNode={dragState.isDragging}
                  lastDragEndTime={lastDragEndTimeRef.current}
-                 onCreateRelationship={handleCreateRelationshipDirect}
+                  onCreateRelationship={nodeOperations.createRelationshipDirect}
                  onPan={(deltaX, deltaY) => {
                    setViewBox((prev) => ({
                      ...prev,
@@ -1278,7 +734,7 @@ export function ImpactTreeApp() {
                      y: prev.y + deltaY,
                    }));
                  }}
-                 onZoom={handleZoom}
+                  onZoom={canvasOperations.handleZoom}
                />
 
                {/* Canvas Controls */}
@@ -1286,7 +742,7 @@ export function ImpactTreeApp() {
                  <Button
                    variant="secondary"
                    size="icon"
-                   onClick={() => handleZoom(1.2)}
+                    onClick={() => canvasOperations.handleZoom(1.2)}
                    className="shadow-lg"
                    aria-label="Zoom in"
                  >
@@ -1295,7 +751,7 @@ export function ImpactTreeApp() {
                  <Button
                    variant="secondary"
                    size="icon"
-                   onClick={() => handleZoom(0.8)}
+                    onClick={() => canvasOperations.handleZoom(0.8)}
                    className="shadow-lg"
                    aria-label="Zoom out"
                  >
@@ -1304,7 +760,7 @@ export function ImpactTreeApp() {
                  <Button
                    variant="secondary"
                    size="icon"
-                   onClick={handleResetView}
+                    onClick={canvasOperations.handleResetView}
                    className="shadow-lg"
                    aria-label="Reset view"
                  >
@@ -1313,7 +769,7 @@ export function ImpactTreeApp() {
                  <Button
                    variant="secondary"
                    size="icon"
-                   onClick={handleCenterView}
+                    onClick={canvasOperations.handleCenterView}
                    className="shadow-lg"
                    aria-label="Center view on all nodes"
                  >
@@ -1332,8 +788,8 @@ export function ImpactTreeApp() {
                }
                measurements={measurements}
                nodes={nodes}
-               onUpdateNode={handleUpdateNode}
-               onDeleteNode={handleDeleteNode}
+                onUpdateNode={nodeOperations.updateNode}
+                onDeleteNode={nodeOperations.deleteNode}
                onAddMeasurement={(measurement: Measurement) => {
                  setMeasurements(
                    new Map(measurements.set(measurement.id, measurement))
