@@ -1,6 +1,6 @@
-# Impact Tree Builder - Modern Version
+# Impact Tree Builder
 
-A modern, fully-featured impact tree visualization tool built with React, TypeScript, Vite, Tailwind CSS, and shadcn-ui.
+A fully-featured impact tree visualization tool built with React, TypeScript, Vite, Tailwind CSS, and shadcn-ui.
 
 ## 🚀 Tech Stack
 
@@ -13,7 +13,7 @@ A modern, fully-featured impact tree visualization tool built with React, TypeSc
 
 ## ✨ Features
 
-### Core Functionality (Preserved from Original)
+### Core Functionality
 
 - ✅ Interactive impact tree visualization with SVG
 - ✅ Multiple node types: Business Metrics, Product Metrics, Initiatives
@@ -64,7 +64,7 @@ The app will be available at `http://localhost:5173/`
 
 ### Testing
 
-This project follows **Test-Driven Development (TDD)** principles as outlined in the constitution.
+See [docs/TESTING.md](docs/TESTING.md) for the complete testing strategy.
 
 #### Running Tests
 
@@ -85,30 +85,28 @@ bun run test:ui
 ## 📁 Project Structure
 
 ```
-src/
-├── components/
-│   ├── ui/                    # shadcn-ui components
-│   │   ├── button.tsx
-│   │   ├── input.tsx
-│   │   ├── textarea.tsx
-│   │   ├── dialog.tsx
-│   │   ├── card.tsx
-│   │   ├── dropdown-menu.tsx
-│   │   └── label.tsx
-│   ├── ImpactTreeApp.tsx     # Main application component
-│   ├── ImpactCanvas.tsx       # SVG canvas with nodes and relationships
-│   ├── Sidebar.tsx            # Left sidebar with tools
-│   └── PropertiesPanel.tsx    # Right panel for properties and measurements
-├── data/
-│   └── sampleData.ts          # Sample impact tree data
-├── lib/
-│   ├── export-utils.ts        # Export functionality (JSON, PNG, HTML)
-│   └── utils.ts               # Utility functions
-├── types/
-│   └── index.ts               # TypeScript type definitions
-├── App.tsx                    # Root component
-├── main.tsx                   # Entry point
-└── index.css                  # Global styles with Tailwind
+impact-tree-builder/
+├── src/
+│   ├── components/           # React components
+│   │   ├── ui/              # shadcn-ui base components
+│   │   ├── __tests__/       # Component unit tests
+│   │   ├── ImpactTreeApp.tsx
+│   │   ├── ImpactCanvas.tsx
+│   │   ├── Sidebar.tsx
+│   │   └── PropertiesPanel.tsx
+│   ├── hooks/               # Custom React hooks
+│   ├── lib/                 # Utility functions
+│   ├── types/               # TypeScript type definitions
+│   ├── data/                # Sample data files
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+├── e2e/                     # Playwright E2E tests
+├── docs/                    # Documentation
+│   ├── TESTING.md          # Testing strategy
+│   └── archive/            # Historical docs
+├── specs/                   # Feature specifications
+└── dist/                    # Production build output
 ```
 
 ## 🎯 Usage
