@@ -606,10 +606,10 @@ describe("ImpactTreeApp", () => {
       // Mock FileReader
       const mockFileReader = {
         readAsText: vi.fn(),
-        onload: null as any,
+        onload: null as ((ev: ProgressEvent<FileReader>) => void) | null,
         result: JSON.stringify(validData)
       };
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+      vi.stubGlobal('FileReader', vi.fn(() => mockFileReader));
 
       // Trigger load/import
       const loadBtn = screen.getByRole("button", { name: /load/i });
@@ -617,7 +617,7 @@ describe("ImpactTreeApp", () => {
 
       // Simulate file load
       if (mockFileReader.onload) {
-        mockFileReader.onload({ target: mockFileReader } as any);
+        mockFileReader.onload({ target: { result: mockFileReader.result } } as ProgressEvent<FileReader>);
       }
     });
   });
