@@ -18,6 +18,52 @@ import { useDraggable } from "@dnd-kit/core";
 import type { ImpactTree, Node, Relationship, Measurement } from "@/types";
 import type { NodeType } from "@/types/drag";
 import { sanitizeInput, sanitizeDescription } from "@/lib/sanitize";
+import { NODE_TYPE_CONFIG } from "@/lib/node-utils";
+
+/**
+ * Configuration for draggable node type buttons
+ */
+interface NodeButtonConfig {
+  nodeType: NodeType;
+  label: string;
+  colorClass: string;
+  shapeClass: string;
+  tooltipText: string;
+}
+
+/**
+ * Node button configurations derived from NODE_TYPE_CONFIG
+ */
+const NODE_BUTTON_CONFIGS: NodeButtonConfig[] = [
+  {
+    nodeType: "business_metric",
+    label: NODE_TYPE_CONFIG.business_metric.label,
+    colorClass: `bg-[${NODE_TYPE_CONFIG.business_metric.color}]`,
+    shapeClass: "rounded",
+    tooltipText: "Add a business outcome or goal metric",
+  },
+  {
+    nodeType: "product_metric",
+    label: NODE_TYPE_CONFIG.product_metric.label,
+    colorClass: `bg-[${NODE_TYPE_CONFIG.product_metric.color}]`,
+    shapeClass: "rounded",
+    tooltipText: "Add a product or feature metric",
+  },
+  {
+    nodeType: "initiative_positive",
+    label: NODE_TYPE_CONFIG.initiative_positive.label,
+    colorClass: `bg-[${NODE_TYPE_CONFIG.initiative_positive.color}]`,
+    shapeClass: "rounded-full",
+    tooltipText: "Add an initiative with positive impact",
+  },
+  {
+    nodeType: "initiative_negative",
+    label: NODE_TYPE_CONFIG.initiative_negative.label,
+    colorClass: `bg-[${NODE_TYPE_CONFIG.initiative_negative.color}]`,
+    shapeClass: "rounded-full",
+    tooltipText: "Add an initiative with negative impact",
+  },
+];
 
 /**
  * Props for the Sidebar component
@@ -152,11 +198,27 @@ export function Sidebar({
     onModeChange("add-node");
   }, [onNodeTypeSelect, onModeChange]);
 
-  // Memoized click handlers for each node type to prevent re-renders
-  const handleBusinessMetricClick = useCallback(() => handleNodeTypeClick("business_metric"), [handleNodeTypeClick]);
-  const handleProductMetricClick = useCallback(() => handleNodeTypeClick("product_metric"), [handleNodeTypeClick]);
-  const handlePositiveInitiativeClick = useCallback(() => handleNodeTypeClick("initiative_positive"), [handleNodeTypeClick]);
-  const handleNegativeInitiativeClick = useCallback(() => handleNodeTypeClick("initiative_negative"), [handleNodeTypeClick]);
+  /**
+   * Handles tree name change with sanitization
+   * Memoized to prevent unnecessary re-renders
+   */
+  const handleTreeNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onTreeUpdate({
+      ...tree,
+      name: sanitizeInput(e.target.value),
+    });
+  }, [tree, onTreeUpdate]);
+
+  /**
+   * Handles tree description change with sanitization
+   * Memoized to prevent unnecessary re-renders
+   */
+  const handleTreeDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onTreeUpdate({
+      ...tree,
+      description: sanitizeDescription(e.target.value),
+    });
+  }, [tree, onTreeUpdate]);
 
   // Track which nodes have measurements for statistics
   const measuredNodes = useMemo(() => {
@@ -185,12 +247,7 @@ export function Sidebar({
                 <Input
                   id="treeName"
                   value={tree.name}
-                  onChange={(e) =>
-                    onTreeUpdate({
-                      ...tree,
-                      name: sanitizeInput(e.target.value),
-                    })
-                  }
+                  onChange={handleTreeNameChange}
                   className="mt-1"
                 />
               </div>
@@ -201,12 +258,7 @@ export function Sidebar({
                 <Textarea
                   id="treeDescription"
                   value={tree.description}
-                  onChange={(e) =>
-                    onTreeUpdate({
-                      ...tree,
-                      description: sanitizeDescription(e.target.value),
-                    })
-                  }
+                  onChange={handleTreeDescriptionChange}
                   rows={3}
                   className="mt-1"
                 />
@@ -220,55 +272,20 @@ export function Sidebar({
           <div className="p-4">
             <h3 className="font-semibold mb-3">Add Nodes</h3>
             <div className="space-y-2">
-              <DraggableNodeButton
-                nodeType="business_metric"
-                label="Business Metric"
-                colorClass="bg-[#2E7D32]"
-                shapeClass="rounded"
-                tooltipText="Add a business outcome or goal metric"
-                isSelected={
-                  mode === "add-node" && selectedNodeType === "business_metric"
-                }
-                onClick={handleBusinessMetricClick}
-              />
-
-              <DraggableNodeButton
-                nodeType="product_metric"
-                label="Product Metric"
-                colorClass="bg-[#1976D2]"
-                shapeClass="rounded"
-                tooltipText="Add a product or feature metric"
-                isSelected={
-                  mode === "add-node" && selectedNodeType === "product_metric"
-                }
-                onClick={handleProductMetricClick}
-              />
-
-              <DraggableNodeButton
-                nodeType="initiative_positive"
-                label="Positive Initiative"
-                colorClass="bg-[#FF6F00]"
-                shapeClass="rounded-full"
-                tooltipText="Add an initiative with positive impact"
-                isSelected={
-                  mode === "add-node" &&
-                  selectedNodeType === "initiative_positive"
-                }
-                onClick={handlePositiveInitiativeClick}
-              />
-
-              <DraggableNodeButton
-                nodeType="initiative_negative"
-                label="Negative Initiative"
-                colorClass="bg-[#D32F2F]"
-                shapeClass="rounded-full"
-                tooltipText="Add an initiative with negative impact"
-                isSelected={
-                  mode === "add-node" &&
-                  selectedNodeType === "initiative_negative"
-                }
-                onClick={handleNegativeInitiativeClick}
-              />
+              {NODE_BUTTON_CONFIGS.map((config) => (
+                <DraggableNodeButton
+                  key={config.nodeType}
+                  nodeType={config.nodeType}
+                  label={config.label}
+                  colorClass={config.colorClass}
+                  shapeClass={config.shapeClass}
+                  tooltipText={config.tooltipText}
+                  isSelected={
+                    mode === "add-node" && selectedNodeType === config.nodeType
+                  }
+                  onClick={() => handleNodeTypeClick(config.nodeType)}
+                />
+              ))}
             </div>
           </div>
 

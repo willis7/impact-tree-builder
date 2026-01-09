@@ -69,7 +69,7 @@ describe('export-utils', () => {
 
   describe('exportAsJSON', () => {
     it('should create and download JSON file with correct data', () => {
-      exportAsJSON(mockTree, mockNodes, mockRelationships, mockMeasurements);
+      exportAsJSON({ tree: mockTree, nodes: mockNodes, relationships: mockRelationships, measurements: mockMeasurements });
 
       expect(mockCreateElement).toHaveBeenCalledWith('a');
       expect(mockCreateObjectURL).toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('export-utils', () => {
 
     it('should sanitize filename by replacing spaces with underscores', () => {
       const treeWithSpaces = { ...mockTree, name: 'Tree With Spaces' };
-      exportAsJSON(treeWithSpaces, mockNodes, mockRelationships, mockMeasurements);
+      exportAsJSON({ tree: treeWithSpaces, nodes: mockNodes, relationships: mockRelationships, measurements: mockMeasurements });
 
       const link = mockCreateElement.mock.results[0].value;
       expect(link.download).toBe('Tree_With_Spaces.json');
@@ -128,7 +128,7 @@ describe('export-utils', () => {
 
   describe('exportAsHTML', () => {
     it('should create and download HTML file', () => {
-      exportAsHTML(mockTree, mockNodes, mockRelationships, mockMeasurements);
+      exportAsHTML({ tree: mockTree, nodes: mockNodes, relationships: mockRelationships, measurements: mockMeasurements });
 
       expect(mockCreateElement).toHaveBeenCalledWith('a');
       expect(mockCreateObjectURL).toHaveBeenCalled();
@@ -142,14 +142,14 @@ describe('export-utils', () => {
 
     it('should sanitize filename for HTML export', () => {
       const treeWithSpaces = { ...mockTree, name: 'Tree With Spaces' };
-      exportAsHTML(treeWithSpaces, mockNodes, mockRelationships, mockMeasurements);
+      exportAsHTML({ tree: treeWithSpaces, nodes: mockNodes, relationships: mockRelationships, measurements: mockMeasurements });
 
       const link = mockCreateElement.mock.results[0].value;
       expect(link.download).toBe('Tree_With_Spaces.html');
     });
 
     it('should include tree metadata in HTML content', () => {
-      exportAsHTML(mockTree, mockNodes, mockRelationships, mockMeasurements);
+      exportAsHTML({ tree: mockTree, nodes: mockNodes, relationships: mockRelationships, measurements: mockMeasurements });
 
       const blobCall = vi.mocked(mockCreateObjectURL).mock.calls[0][0] as Blob;
       // We can't easily test the blob content, but we can verify the function completes

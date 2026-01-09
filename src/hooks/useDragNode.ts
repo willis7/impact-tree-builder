@@ -50,26 +50,6 @@ export function useDragNode(options: {
   };
 
   /**
-   * Updates the current drag position during drag movement
-   * Called continuously as the user moves the cursor while dragging
-   *
-   * @param position - Current cursor position
-   */
-  const updateDragPosition = (position: Position): void => {
-    setDragState((prev) => {
-      if (!prev.isDragging) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        cursorPosition: position,
-        previewPosition: position,
-      };
-    });
-  };
-
-  /**
    * Completes the drag operation and creates the node
    * Called when user drops the node on the canvas
    *
@@ -103,7 +83,6 @@ export function useDragNode(options: {
   return {
     dragState,
     startDrag,
-    updateDragPosition,
     endDrag,
     cancelDrag,
   };

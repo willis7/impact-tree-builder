@@ -136,12 +136,6 @@ export interface UseDragNodeReturn {
   startDrag: (nodeType: NodeType, position: Position) => void;
 
   /**
-   * Update drag position as cursor moves
-   * @param position - New cursor position
-   */
-  updateDragPosition: (position: Position) => void;
-
-  /**
    * End drag operation and create node
    * @param dropPosition - Canvas coordinates for node creation, null to cancel
    */
@@ -168,12 +162,6 @@ export interface UseDragRelationshipReturn {
    * @param position - Initial cursor position
    */
   startDrag: (sourceNodeId: string, position: Position) => void;
-
-  /**
-   * Update drag position as cursor moves
-   * @param position - New cursor position
-   */
-  updateDragPosition: (position: Position) => void;
 
   /**
    * Set the target node for relationship (hover state)

@@ -38,7 +38,7 @@ describe("ImpactCanvas", () => {
     selectedRelationshipId: null,
     onNodeSelect: vi.fn(),
     onRelationshipSelect: vi.fn(),
-    onNodeMove: vi.fn(),
+    onNodeUpdate: vi.fn(),
     onAddNode: vi.fn(),
     mode: "select" as const,
     viewBox: { x: 0, y: 0, width: 1200, height: 800, scale: 1 },

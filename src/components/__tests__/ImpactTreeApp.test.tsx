@@ -47,7 +47,6 @@ vi.mock("@/hooks/useDragNode", () => ({
       targetNodeId: null,
     },
     startDrag: vi.fn(),
-    updateDragPosition: vi.fn(),
     endDrag: vi.fn(),
     cancelDrag: vi.fn(),
   })),

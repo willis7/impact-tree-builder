@@ -32,10 +32,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Move,
   Save,
   Download,
   Upload,
@@ -47,6 +43,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { ImpactCanvas } from "./ImpactCanvas";
 import { Sidebar } from "./Sidebar";
 import { PropertiesPanel } from "./PropertiesPanel";
+import { CanvasControls } from "./CanvasControls";
 import type { Measurement } from "@/types";
 import type { NodeType } from "@/types/drag";
 import { getNodeTypeLabel } from "@/lib/node-utils";
@@ -390,7 +387,7 @@ export function ImpactTreeApp() {
                  selectedRelationshipId={selectedRelationshipId}
                  onNodeSelect={setSelectedNodeId}
                  onRelationshipSelect={setSelectedRelationshipId}
-                  onNodeMove={nodeOperations.updateNode}
+                  onNodeUpdate={nodeOperations.updateNode}
                   onAddNode={nodeOperations.addNode}
                  mode={mode}
                  viewBox={viewBox}
@@ -405,44 +402,12 @@ export function ImpactTreeApp() {
                />
 
                {/* Canvas Controls */}
-               <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-                 <Button
-                   variant="secondary"
-                   size="icon"
-                    onClick={() => canvasOperations.handleZoom(1.2)}
-                   className="shadow-lg"
-                   aria-label="Zoom in"
-                 >
-                   <ZoomIn className="h-4 w-4" />
-                 </Button>
-                 <Button
-                   variant="secondary"
-                   size="icon"
-                    onClick={() => canvasOperations.handleZoom(0.8)}
-                   className="shadow-lg"
-                   aria-label="Zoom out"
-                 >
-                   <ZoomOut className="h-4 w-4" />
-                 </Button>
-                 <Button
-                   variant="secondary"
-                   size="icon"
-                    onClick={canvasOperations.handleResetView}
-                   className="shadow-lg"
-                   aria-label="Reset view"
-                 >
-                   <Maximize2 className="h-4 w-4" />
-                 </Button>
-                 <Button
-                   variant="secondary"
-                   size="icon"
-                    onClick={canvasOperations.handleCenterView}
-                   className="shadow-lg"
-                   aria-label="Center view on all nodes"
-                 >
-                   <Move className="h-4 w-4" />
-                 </Button>
-               </div>
+               <CanvasControls
+                 onZoomIn={() => canvasOperations.handleZoom(1.2)}
+                 onZoomOut={() => canvasOperations.handleZoom(0.8)}
+                 onResetView={canvasOperations.handleResetView}
+                 onCenterView={canvasOperations.handleCenterView}
+               />
                </main>
 
              {/* Right Panel */}

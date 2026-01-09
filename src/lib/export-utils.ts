@@ -1,9 +1,19 @@
 import type { ImpactTree, Node, Relationship, Measurement, TreeData } from '@/types';
 
 /**
+ * Complete tree state for export operations
+ */
+export interface TreeState {
+  tree: ImpactTree;
+  nodes: Map<string, Node>;
+  relationships: Map<string, Relationship>;
+  measurements: Map<string, Measurement>;
+}
+
+/**
  * Export tree data as JSON file
  */
-export function exportAsJSON(tree: ImpactTree, nodes: Map<string, Node>, relationships: Map<string, Relationship>, measurements: Map<string, Measurement>): void {
+export function exportAsJSON({ tree, nodes, relationships, measurements }: TreeState): void {
   const data: TreeData = {
     tree,
     nodes: Array.from(nodes.values()),
@@ -114,7 +124,7 @@ export async function exportAsPNG(tree: ImpactTree, canvasElement: SVGSVGElement
 /**
  * Export tree as self-contained HTML page
  */
-export function exportAsHTML(tree: ImpactTree, nodes: Map<string, Node>, relationships: Map<string, Relationship>, measurements: Map<string, Measurement>): void {
+export function exportAsHTML({ tree, nodes, relationships, measurements }: TreeState): void {
   // Generate SVG content for the tree
   const svgContent = generateTreeSVG(nodes, relationships);
 

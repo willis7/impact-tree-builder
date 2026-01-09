@@ -3,6 +3,44 @@ import { useDroppable } from "@dnd-kit/core";
 import type { Node, Relationship, Measurement } from "@/types";
 import { screenToCanvasCoordinates } from "@/lib/drag-utils";
 
+/**
+ * Cursor class lookup for different canvas states
+ */
+const CURSOR_CLASSES = {
+  panning: "cursor-grabbing",
+  connectDragging: "cursor-crosshair",
+  connect: "cursor-pointer",
+  addNode: "cursor-copy",
+  select: "cursor-grab",
+  default: "cursor-default",
+} as const;
+
+/**
+ * Gets the appropriate cursor class based on current canvas state
+ */
+function getCursorClass(
+  isPanning: boolean,
+  mode: "select" | "add-node" | "connect",
+  isConnectDragging: boolean
+): string {
+  if (isPanning) return CURSOR_CLASSES.panning;
+  if (mode === "connect" && isConnectDragging) return CURSOR_CLASSES.connectDragging;
+  if (mode === "connect") return CURSOR_CLASSES.connect;
+  if (mode === "add-node") return CURSOR_CLASSES.addNode;
+  if (mode === "select") return CURSOR_CLASSES.select;
+  return CURSOR_CLASSES.default;
+}
+
+/**
+ * Marker ID lookup for relationship types
+ */
+const MARKER_MAP: Record<string, string> = {
+  desirable_effect: "url(#arrowhead-green)",
+  undesirable_effect: "url(#arrowhead-red)",
+} as const;
+
+const DEFAULT_MARKER = "url(#arrowhead-blue)";
+
 interface ImpactCanvasProps {
   nodes: Map<string, Node>;
   relationships: Map<string, Relationship>;
@@ -11,7 +49,7 @@ interface ImpactCanvasProps {
   selectedRelationshipId: string | null;
   onNodeSelect: (nodeId: string | null) => void;
   onRelationshipSelect: (relId: string | null) => void;
-  onNodeMove: (nodeId: string, updates: Partial<Node>) => void;
+  onNodeUpdate: (nodeId: string, updates: Partial<Node>) => void;
   onAddNode: (x: number, y: number) => void;
   mode: "select" | "add-node" | "connect";
   viewBox: {
@@ -39,7 +77,7 @@ export const ImpactCanvas = memo(function ImpactCanvas({
   selectedRelationshipId,
   onNodeSelect,
   onRelationshipSelect,
-  onNodeMove,
+  onNodeUpdate,
   onAddNode,
   mode,
   viewBox,
@@ -202,7 +240,7 @@ export const ImpactCanvas = memo(function ImpactCanvas({
 
       const node = nodes.get(dragState.nodeId);
       if (node) {
-        onNodeMove(dragState.nodeId, {
+        onNodeUpdate(dragState.nodeId, {
           position_x: node.position_x + deltaX,
           position_y: node.position_y + deltaY,
         });
@@ -346,19 +384,11 @@ export const ImpactCanvas = memo(function ImpactCanvas({
           setNodeRef(node as unknown as HTMLElement);
           onCanvasReady?.(node);
         }}
-        className={`w-full h-full transition-colors duration-150 ${
-          panState.isPanning
-            ? "cursor-grabbing"
-            : mode === "connect" && connectDragState.isDragging
-            ? "cursor-crosshair"
-            : mode === "connect"
-            ? "cursor-pointer"
-            : mode === "add-node"
-            ? "cursor-copy"
-            : mode === "select"
-            ? "cursor-grab"
-            : "cursor-default"
-        }`}
+        className={`w-full h-full transition-colors duration-150 ${getCursorClass(
+          panState.isPanning,
+          mode,
+          connectDragState.isDragging
+        )}`}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width / viewBox.scale} ${
           viewBox.height / viewBox.scale
         }`}
@@ -443,12 +473,7 @@ export const ImpactCanvas = memo(function ImpactCanvas({
             const targetNode = nodes.get(rel.target_node_id);
             if (!sourceNode || !targetNode) return null;
 
-            const markerEnd =
-              rel.relationship_type === "desirable_effect"
-                ? "url(#arrowhead-green)"
-                : rel.relationship_type === "undesirable_effect"
-                ? "url(#arrowhead-red)"
-                : "url(#arrowhead-blue)";
+            const markerEnd = MARKER_MAP[rel.relationship_type] || DEFAULT_MARKER;
 
             return (
               <line

@@ -35,11 +35,9 @@ describe("useDragNode", () => {
       const { result } = renderHook(() => useDragNode({ onNodeCreate }));
 
       expect(result.current.startDrag).toBeDefined();
-      expect(result.current.updateDragPosition).toBeDefined();
       expect(result.current.endDrag).toBeDefined();
       expect(result.current.cancelDrag).toBeDefined();
       expect(typeof result.current.startDrag).toBe("function");
-      expect(typeof result.current.updateDragPosition).toBe("function");
       expect(typeof result.current.endDrag).toBe("function");
       expect(typeof result.current.cancelDrag).toBe("function");
     });
@@ -233,12 +231,7 @@ describe("useDragNode", () => {
         result.current.startDrag("business_metric", { x: 100, y: 200 });
       });
 
-      // Update position (simulate drag movement)
-      act(() => {
-        result.current.updateDragPosition({ x: 300, y: 400 });
-      });
-
-      // End drag
+      // End drag at drop position
       act(() => {
         result.current.endDrag({ x: 300, y: 400 });
       });
@@ -358,14 +351,12 @@ describe("useDragNode", () => {
       expect(onNodeCreate).not.toHaveBeenCalled();
     });
 
-    it("should handle cancel after position updates", () => {
+    it("should handle cancel after drag started", () => {
       const onNodeCreate = vi.fn();
       const { result } = renderHook(() => useDragNode({ onNodeCreate }));
 
       act(() => {
         result.current.startDrag("initiative_positive", { x: 100, y: 200 });
-        result.current.updateDragPosition({ x: 200, y: 300 });
-        result.current.updateDragPosition({ x: 300, y: 400 });
         result.current.cancelDrag();
       });
 
@@ -390,58 +381,6 @@ describe("useDragNode", () => {
 
       expect(result.current.dragState.isDragging).toBe(true);
       expect(result.current.dragState.activeNodeType).toBe("product_metric");
-    });
-  });
-
-  describe("updateDragPosition", () => {
-    it("should update current position during drag", () => {
-      const onNodeCreate = vi.fn();
-      const { result } = renderHook(() => useDragNode({ onNodeCreate }));
-
-      act(() => {
-        result.current.startDrag("business_metric", { x: 100, y: 200 });
-      });
-
-      act(() => {
-        result.current.updateDragPosition({ x: 150, y: 250 });
-      });
-
-      expect(result.current.dragState.cursorPosition).toEqual({
-        x: 150,
-        y: 250,
-      });
-      expect(result.current.dragState.previewPosition).toEqual({
-        x: 150,
-        y: 250,
-      });
-    });
-
-    it("should handle multiple position updates", () => {
-      const onNodeCreate = vi.fn();
-      const { result } = renderHook(() => useDragNode({ onNodeCreate }));
-
-      act(() => {
-        result.current.startDrag("product_metric", { x: 100, y: 200 });
-        result.current.updateDragPosition({ x: 150, y: 250 });
-        result.current.updateDragPosition({ x: 200, y: 300 });
-        result.current.updateDragPosition({ x: 250, y: 350 });
-      });
-
-      expect(result.current.dragState.cursorPosition).toEqual({
-        x: 250,
-        y: 350,
-      });
-    });
-
-    it("should not update position if drag was never started", () => {
-      const onNodeCreate = vi.fn();
-      const { result } = renderHook(() => useDragNode({ onNodeCreate }));
-
-      act(() => {
-        result.current.updateDragPosition({ x: 150, y: 250 });
-      });
-
-      expect(result.current.dragState.cursorPosition).toEqual({ x: 0, y: 0 });
     });
   });
 

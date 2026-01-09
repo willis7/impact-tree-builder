@@ -1,5 +1,6 @@
 import React from "react";
 import type { NodeType } from "@/types/drag";
+import { KEYBOARD_SHORTCUTS } from "@/types/drag";
 
 export interface UseKeyboardNavigationState {
   mode: "select" | "add-node" | "connect";
@@ -13,6 +14,20 @@ export interface UseKeyboardNavigationActions {
   setConnectSourceNodeId: React.Dispatch<React.SetStateAction<string | null>>;
   setHelpDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
+/**
+ * Node type shortcuts mapping (case-insensitive)
+ */
+const NODE_TYPE_SHORTCUTS: Record<string, NodeType> = {
+  b: KEYBOARD_SHORTCUTS.b,
+  B: KEYBOARD_SHORTCUTS.b,
+  p: KEYBOARD_SHORTCUTS.p,
+  P: KEYBOARD_SHORTCUTS.p,
+  i: KEYBOARD_SHORTCUTS.i,
+  I: KEYBOARD_SHORTCUTS.i,
+  n: KEYBOARD_SHORTCUTS.n,
+  N: KEYBOARD_SHORTCUTS.n,
+};
 
 /**
  * Custom hook for managing keyboard navigation and shortcuts
@@ -31,8 +46,8 @@ export function useKeyboardNavigation(
         return;
       }
 
-      // T116: Escape key - cancel current operation
-      if (e.key === "Escape") {
+      // Escape key - cancel current operation
+      if (e.key === KEYBOARD_SHORTCUTS.Escape) {
         if (state.dragState.isDragging) {
           actions.cancelDrag();
         } else if (state.mode === "connect") {
@@ -45,39 +60,16 @@ export function useKeyboardNavigation(
         return;
       }
 
-      // T110: 'b' key - Business Metric
-      if (e.key === "b" || e.key === "B") {
-        actions.setSelectedNodeType("business_metric");
+      // Node type shortcuts (b, p, i, n)
+      const nodeType = NODE_TYPE_SHORTCUTS[e.key];
+      if (nodeType) {
+        actions.setSelectedNodeType(nodeType);
         actions.setMode("add-node");
         e.preventDefault();
         return;
       }
 
-      // T111: 'p' key - Product Metric
-      if (e.key === "p" || e.key === "P") {
-        actions.setSelectedNodeType("product_metric");
-        actions.setMode("add-node");
-        e.preventDefault();
-        return;
-      }
-
-      // T112: 'i' key - Initiative (positive)
-      if (e.key === "i" || e.key === "I") {
-        actions.setSelectedNodeType("initiative_positive");
-        actions.setMode("add-node");
-        e.preventDefault();
-        return;
-      }
-
-      // T113: 'n' key - Initiative (negative)
-      if (e.key === "n" || e.key === "N") {
-        actions.setSelectedNodeType("initiative_negative");
-        actions.setMode("add-node");
-        e.preventDefault();
-        return;
-      }
-
-      // T117: 'c' key - Connect Nodes mode
+      // 'c' key - Connect Nodes mode
       if (e.key === "c" || e.key === "C") {
         actions.setMode("connect");
         actions.setSelectedNodeType(null);
@@ -85,7 +77,7 @@ export function useKeyboardNavigation(
         return;
       }
 
-      // T118: 's' key - Select mode
+      // 's' key - Select mode
       if (e.key === "s" || e.key === "S") {
         actions.setMode("select");
         actions.setSelectedNodeType(null);

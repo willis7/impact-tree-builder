@@ -160,7 +160,7 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
    * Exports the tree as a JSON file
    */
   const handleExportJSON = useCallback(() => {
-    exportAsJSON(tree, nodes, relationships, measurements);
+    exportAsJSON({ tree, nodes, relationships, measurements });
   }, [tree, nodes, relationships, measurements]);
 
   /**
@@ -186,7 +186,7 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
    * Exports the tree as an HTML page
    */
   const handleExportHTML = useCallback(() => {
-    exportAsHTML(tree, nodes, relationships, measurements);
+    exportAsHTML({ tree, nodes, relationships, measurements });
   }, [tree, nodes, relationships, measurements]);
 
   /**
