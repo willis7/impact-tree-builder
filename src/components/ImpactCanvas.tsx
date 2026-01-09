@@ -384,11 +384,6 @@ export const ImpactCanvas = memo(function ImpactCanvas({
     onZoom(zoomFactor, canvasX, canvasY);
   };
 
-  const truncateText = useCallback((text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength - 3) + "...";
-  }, []);
-
   const nodePerformanceMap = useMemo(() => {
     const performanceMap = new Map<string, boolean | null>();
     const measurementsByNode = new Map<string, Measurement[]>();
@@ -797,7 +792,7 @@ export const ImpactCanvas = memo(function ImpactCanvas({
                   className="fill-foreground text-xs font-medium pointer-events-none select-none"
                   style={{ fontSize: "11px" }}
                 >
-                  {truncateText(node.name, 16)}
+                  {node.name}
                 </text>
               </g>
             );
