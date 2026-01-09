@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo, useCallback, memo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import type { Node, Relationship, Measurement } from "@/types";
 
@@ -30,7 +30,7 @@ interface ImpactCanvasProps {
   onZoom?: (factor: number, centerX: number, centerY: number) => void;
 }
 
-export function ImpactCanvas({
+export const ImpactCanvas = memo(function ImpactCanvas({
   nodes,
   relationships,
   measurements,
@@ -309,24 +309,47 @@ export function ImpactCanvas({
     onZoom(zoomFactor, canvasX, canvasY);
   };
 
-  const truncateText = (text: string, maxLength: number) => {
+  // Memoize truncateText to avoid recreating on each render
+  const truncateText = useCallback((text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength - 3) + "...";
-  };
+  }, []);
 
-  const calculatePerformance = (nodeId: string) => {
-    const nodeMeasurements = Array.from(measurements.values()).filter(
-      (m) => m.node_id === nodeId
-    );
-    if (nodeMeasurements.length === 0) return null;
+  // Memoize performance calculations for all nodes to avoid O(n*m) on each render
+  const nodePerformanceMap = useMemo(() => {
+    const performanceMap = new Map<string, boolean | null>();
+    const measurementsByNode = new Map<string, Measurement[]>();
 
-    const avgPerformance =
-      nodeMeasurements.reduce((sum, meas) => {
-        return sum + Math.abs(meas.actual_value / meas.expected_value);
-      }, 0) / nodeMeasurements.length;
+    // Group measurements by node
+    measurements.forEach((m) => {
+      const existing = measurementsByNode.get(m.node_id) || [];
+      existing.push(m);
+      measurementsByNode.set(m.node_id, existing);
+    });
 
-    return avgPerformance >= 0.8;
-  };
+    // Calculate performance for each node
+    nodes.forEach((_, nodeId) => {
+      const nodeMeasurements = measurementsByNode.get(nodeId);
+      if (!nodeMeasurements || nodeMeasurements.length === 0) {
+        performanceMap.set(nodeId, null);
+        return;
+      }
+
+      const avgPerformance =
+        nodeMeasurements.reduce((sum, meas) => {
+          return sum + Math.abs(meas.actual_value / meas.expected_value);
+        }, 0) / nodeMeasurements.length;
+
+      performanceMap.set(nodeId, avgPerformance >= 0.8);
+    });
+
+    return performanceMap;
+  }, [nodes, measurements]);
+
+  // Simple lookup function using memoized map
+  const getNodePerformance = useCallback((nodeId: string) => {
+    return nodePerformanceMap.get(nodeId) ?? null;
+  }, [nodePerformanceMap]);
 
   return (
     <div className="w-full h-full bg-muted/10 relative">
@@ -525,7 +548,7 @@ export function ImpactCanvas({
         {/* Nodes */}
         <g>
           {Array.from(nodes.values()).map((node) => {
-            const hasPerformance = calculatePerformance(node.id);
+            const hasPerformance = getNodePerformance(node.id);
             const isConnectSource =
               mode === "connect" && connectSourceNodeId === node.id;
 
@@ -616,4 +639,4 @@ export function ImpactCanvas({
       </svg>
     </div>
   );
-}
+});

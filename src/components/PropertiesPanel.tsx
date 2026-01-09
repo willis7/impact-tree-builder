@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -87,11 +87,13 @@ export function PropertiesPanel({
     measurement_period: "monthly",
   });
 
-  const nodeMeasurements = selectedNode
-    ? Array.from(measurements.values()).filter(
-        (m) => m.node_id === selectedNode.id
-      )
-    : [];
+  // Memoize filtered measurements to avoid recalculating on every render
+  const nodeMeasurements = useMemo(() => {
+    if (!selectedNode) return [];
+    return Array.from(measurements.values()).filter(
+      (m) => m.node_id === selectedNode.id
+    );
+  }, [selectedNode, measurements]);
 
   /**
    * Converts node type identifier to human-readable label
@@ -117,10 +119,10 @@ export function PropertiesPanel({
    * @param measurement - The measurement to calculate performance for
    * @returns Performance ratio (0 if expected_value is 0, otherwise actual/expected)
    */
-  const calculateMeasurementPerformance = (measurement: Measurement) => {
+  const calculateMeasurementPerformance = useCallback((measurement: Measurement) => {
     if (measurement.expected_value === 0) return 0;
     return Math.abs(measurement.actual_value / measurement.expected_value);
-  };
+  }, []);
 
   /**
    * Saves edited node properties and exits edit mode

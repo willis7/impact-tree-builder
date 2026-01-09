@@ -12,7 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useMemo } from "react";
+import { useMemo, useCallback, memo } from "react";
 import { Link2 } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
 import type { ImpactTree, Node, Relationship, Measurement } from "@/types";
@@ -66,11 +66,12 @@ interface DraggableNodeButtonProps {
 /**
  * Draggable node type button component
  * Supports both click-to-add and drag-to-add workflows (FR-014)
+ * Wrapped with React.memo to prevent unnecessary re-renders
  *
  * @param props - Component props
  * @returns A draggable button element
  */
-function DraggableNodeButton({
+const DraggableNodeButton = memo(function DraggableNodeButton({
   nodeType,
   label,
   colorClass,
@@ -113,7 +114,7 @@ function DraggableNodeButton({
       </TooltipContent>
     </Tooltip>
   );
-}
+});
 
 /**
  * Sidebar component for impact tree management
@@ -143,12 +144,19 @@ export function Sidebar({
   /**
    * Handles node type button clicks
    * Activates add-node mode with the selected type
+   * Memoized with useCallback to prevent child re-renders
    * @param type - The node type identifier (business_metric, product_metric, initiative)
    */
-  const handleNodeTypeClick = (type: string) => {
+  const handleNodeTypeClick = useCallback((type: string) => {
     onNodeTypeSelect(type);
     onModeChange("add-node");
-  };
+  }, [onNodeTypeSelect, onModeChange]);
+
+  // Memoized click handlers for each node type to prevent re-renders
+  const handleBusinessMetricClick = useCallback(() => handleNodeTypeClick("business_metric"), [handleNodeTypeClick]);
+  const handleProductMetricClick = useCallback(() => handleNodeTypeClick("product_metric"), [handleNodeTypeClick]);
+  const handlePositiveInitiativeClick = useCallback(() => handleNodeTypeClick("initiative_positive"), [handleNodeTypeClick]);
+  const handleNegativeInitiativeClick = useCallback(() => handleNodeTypeClick("initiative_negative"), [handleNodeTypeClick]);
 
   // Track which nodes have measurements for statistics
   const measuredNodes = useMemo(() => {
@@ -221,7 +229,7 @@ export function Sidebar({
                 isSelected={
                   mode === "add-node" && selectedNodeType === "business_metric"
                 }
-                onClick={() => handleNodeTypeClick("business_metric")}
+                onClick={handleBusinessMetricClick}
               />
 
               <DraggableNodeButton
@@ -233,7 +241,7 @@ export function Sidebar({
                 isSelected={
                   mode === "add-node" && selectedNodeType === "product_metric"
                 }
-                onClick={() => handleNodeTypeClick("product_metric")}
+                onClick={handleProductMetricClick}
               />
 
               <DraggableNodeButton
@@ -246,7 +254,7 @@ export function Sidebar({
                   mode === "add-node" &&
                   selectedNodeType === "initiative_positive"
                 }
-                onClick={() => handleNodeTypeClick("initiative_positive")}
+                onClick={handlePositiveInitiativeClick}
               />
 
               <DraggableNodeButton
@@ -259,7 +267,7 @@ export function Sidebar({
                   mode === "add-node" &&
                   selectedNodeType === "initiative_negative"
                 }
-                onClick={() => handleNodeTypeClick("initiative_negative")}
+                onClick={handleNegativeInitiativeClick}
               />
             </div>
           </div>

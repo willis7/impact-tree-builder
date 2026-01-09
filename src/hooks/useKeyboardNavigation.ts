@@ -103,7 +103,18 @@ export function useKeyboardNavigation(
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-   }, [state.dragState.isDragging, state.mode, actions]);
+    // Using individual action dependencies instead of the whole `actions` object
+    // to prevent effect re-runs when unrelated actions change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    state.dragState.isDragging,
+    state.mode,
+    actions.cancelDrag,
+    actions.setMode,
+    actions.setSelectedNodeType,
+    actions.setConnectSourceNodeId,
+    actions.setHelpDialogOpen,
+  ]);
 
   // No return value needed
 }

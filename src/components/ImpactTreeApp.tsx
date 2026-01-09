@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -177,19 +177,23 @@ export function ImpactTreeApp() {
      lastDragIdRef
    );
 
+   // Memoized pan handler to prevent unnecessary re-renders
+   // Defined before useCanvasAutoPan which depends on it
+   const handlePan = useCallback((deltaX: number, deltaY: number) => {
+     setViewBox((prev) => ({
+       ...prev,
+       x: prev.x + deltaX,
+       y: prev.y + deltaY,
+     }));
+   }, [setViewBox]);
+
    // Auto-pan when dragging near viewport edges
    useCanvasAutoPan({
      canvasElement,
      isDragging: dragState.isDragging,
      cursorPositionRef: mousePositionRef,
      viewBox,
-     onPan: (deltaX, deltaY) => {
-       setViewBox((prev) => ({
-         ...prev,
-         x: prev.x + deltaX,
-         y: prev.y + deltaY,
-       }));
-     },
+     onPan: handlePan,
    });
 
    // Keyboard navigation hook
@@ -212,6 +216,13 @@ export function ImpactTreeApp() {
   });
   const keyboardSensor = useSensor(KeyboardSensor);
   const sensors = useSensors(mouseSensor, keyboardSensor);
+
+  // Memoized add measurement handler
+  const handleAddMeasurement = useCallback((measurement: Measurement) => {
+    setMeasurements(
+      new Map(measurements.set(measurement.id, measurement))
+    );
+  }, [measurements, setMeasurements]);
 
 
 
@@ -576,13 +587,7 @@ export function ImpactTreeApp() {
                  isDraggingNode={dragState.isDragging}
                  lastDragEndTime={lastDragEndTimeRef.current}
                   onCreateRelationship={nodeOperations.createRelationshipDirect}
-                 onPan={(deltaX, deltaY) => {
-                   setViewBox((prev) => ({
-                     ...prev,
-                     x: prev.x + deltaX,
-                     y: prev.y + deltaY,
-                   }));
-                 }}
+                 onPan={handlePan}
                   onZoom={canvasOperations.handleZoom}
                />
 
@@ -639,11 +644,7 @@ export function ImpactTreeApp() {
                nodes={nodes}
                 onUpdateNode={nodeOperations.updateNode}
                 onDeleteNode={nodeOperations.deleteNode}
-               onAddMeasurement={(measurement: Measurement) => {
-                 setMeasurements(
-                   new Map(measurements.set(measurement.id, measurement))
-                 );
-               }}
+               onAddMeasurement={handleAddMeasurement}
              />
            </div>
          </TooltipProvider>
