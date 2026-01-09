@@ -186,6 +186,7 @@
 
   .animate-ring-pulse {
     animation: ring-pulse 2s ease-in-out infinite;
+    will-change: transform, opacity;
   }
 
   /* Smooth hover transitions */

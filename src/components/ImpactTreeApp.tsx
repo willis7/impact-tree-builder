@@ -38,6 +38,9 @@ import {
   HelpCircle,
   Plus,
   ChevronDown,
+  Loader2,
+  PanelLeft,
+  PanelRight,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { ImpactCanvas } from "./ImpactCanvas";
@@ -100,6 +103,8 @@ export function ImpactTreeApp() {
   // UI-specific state (stays in component)
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [canvasElement, setCanvasElement] = useState<SVGSVGElement | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [propertiesOpen, setPropertiesOpen] = useState(true);
 
   // Track real-time mouse position for accurate drop coordinates
   const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -331,9 +336,18 @@ export function ImpactTreeApp() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={operations.handleImport}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Load
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={operations.handleImport}
+                    disabled={operations.isImporting}
+                  >
+                    {operations.isImporting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    {operations.isImporting ? "Loading..." : "Load"}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Load tree from file</TooltipContent>
@@ -357,9 +371,16 @@ export function ImpactTreeApp() {
                      <Download className="h-4 w-4 mr-2" />
                      Export as JSON
                    </DropdownMenuItem>
-                   <DropdownMenuItem onClick={() => operations.handleExportPNG(canvasElement)}>
-                     <Download className="h-4 w-4 mr-2" />
-                     Export as PNG
+                   <DropdownMenuItem
+                     onClick={() => operations.handleExportPNG(canvasElement)}
+                     disabled={operations.isExporting}
+                   >
+                     {operations.isExporting ? (
+                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                     ) : (
+                       <Download className="h-4 w-4 mr-2" />
+                     )}
+                     {operations.isExporting ? "Exporting..." : "Export as PNG"}
                    </DropdownMenuItem>
                    <DropdownMenuItem onClick={operations.handleExportHTML}>
                      <Download className="h-4 w-4 mr-2" />
@@ -399,19 +420,32 @@ export function ImpactTreeApp() {
             </div>
           </header>
 
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar */}
-            <Sidebar
-              tree={tree}
-              onTreeUpdate={setTree}
-              mode={mode}
-              onModeChange={setMode}
-              selectedNodeType={selectedNodeType}
-              onNodeTypeSelect={setSelectedNodeType}
-              nodes={nodes}
-              relationships={relationships}
-              measurements={measurements}
-            />
+          <div className="flex flex-1 overflow-hidden relative">
+            {/* Left Sidebar - hidden on small screens unless toggled */}
+            <div className={`${sidebarOpen ? "block" : "hidden"} md:block absolute md:relative z-30 h-full`}>
+              <Sidebar
+                tree={tree}
+                onTreeUpdate={setTree}
+                mode={mode}
+                onModeChange={setMode}
+                selectedNodeType={selectedNodeType}
+                onNodeTypeSelect={setSelectedNodeType}
+                nodes={nodes}
+                relationships={relationships}
+                measurements={measurements}
+              />
+            </div>
+
+            {/* Sidebar toggle button - visible on small screens */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-2 top-2 z-40 md:hidden h-8 w-8 bg-card/90 backdrop-blur-sm shadow-sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
 
             {/* Canvas */}
             <main className="flex-1 relative bg-muted/20 border-x">
@@ -462,21 +496,34 @@ export function ImpactTreeApp() {
                </AnimatePresence>
                </main>
 
-             {/* Right Panel */}
-             <PropertiesPanel
-               selectedNode={selectedNodeId ? nodes.get(selectedNodeId) : null}
-               selectedRelationship={
-                 selectedRelationshipId
-                   ? relationships.get(selectedRelationshipId)
-                   : null
-               }
-               measurements={measurements}
-               nodes={nodes}
-                onUpdateNode={nodeOperations.updateNode}
-                onDeleteNode={nodeOperations.deleteNode}
-               onAddMeasurement={handleAddMeasurement}
-               onReorderMeasurements={handleReorderMeasurements}
-             />
+             {/* Properties toggle button - visible on small screens */}
+             <Button
+               variant="ghost"
+               size="icon"
+               className="absolute right-2 top-2 z-40 md:hidden h-8 w-8 bg-card/90 backdrop-blur-sm shadow-sm"
+               onClick={() => setPropertiesOpen(!propertiesOpen)}
+               aria-label={propertiesOpen ? "Close properties" : "Open properties"}
+             >
+               <PanelRight className="h-4 w-4" />
+             </Button>
+
+             {/* Right Panel - hidden on small screens unless toggled */}
+             <div className={`${propertiesOpen ? "block" : "hidden"} md:block absolute md:relative right-0 z-30 h-full`}>
+               <PropertiesPanel
+                 selectedNode={selectedNodeId ? nodes.get(selectedNodeId) : null}
+                 selectedRelationship={
+                   selectedRelationshipId
+                     ? relationships.get(selectedRelationshipId)
+                     : null
+                 }
+                 measurements={measurements}
+                 nodes={nodes}
+                  onUpdateNode={nodeOperations.updateNode}
+                  onDeleteNode={nodeOperations.deleteNode}
+                 onAddMeasurement={handleAddMeasurement}
+                 onReorderMeasurements={handleReorderMeasurements}
+               />
+             </div>
            </div>
          </TooltipProvider>
       </div>
