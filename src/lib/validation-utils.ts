@@ -2,9 +2,106 @@
  * Validation utilities for Impact Tree data structures
  */
 
+import type { ImpactTree, Node, Relationship, Measurement, TreeData } from "@/types";
+
 export interface ValidationResult {
   isValid: boolean;
   errors: string[];
+}
+
+/**
+ * Type guard to check if a value is a non-null object
+ */
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/**
+ * Type guard to check if a value has all required string properties
+ */
+function hasRequiredStringFields(
+  obj: Record<string, unknown>,
+  fields: string[]
+): boolean {
+  return fields.every((field) => field in obj);
+}
+
+/**
+ * Type guard to validate ImpactTree structure
+ */
+export function isValidTree(value: unknown): value is ImpactTree {
+  if (!isObject(value)) return false;
+  const requiredFields = ["id", "name", "description", "created_date", "updated_date", "owner"];
+  return hasRequiredStringFields(value, requiredFields);
+}
+
+/**
+ * Type guard to validate Node structure
+ */
+export function isValidNode(value: unknown): value is Node {
+  if (!isObject(value)) return false;
+  const requiredFields = ["id", "name", "description", "node_type", "level", "position_x", "position_y", "color", "shape"];
+  if (!hasRequiredStringFields(value, requiredFields)) return false;
+
+  const nodeType = value.node_type;
+  if (typeof nodeType !== "string") return false;
+  // Note: 'initiative' is for backward compat with older files, new types include initiative_positive/negative
+  if (!["business_metric", "product_metric", "initiative", "initiative_positive", "initiative_negative"].includes(nodeType)) {
+    return false;
+  }
+
+  const shape = value.shape;
+  if (typeof shape !== "string" || !["rectangle", "ellipse"].includes(shape)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Type guard to validate Relationship structure
+ */
+export function isValidRelationship(value: unknown): value is Relationship {
+  if (!isObject(value)) return false;
+  const requiredFields = ["id", "source_node_id", "target_node_id", "relationship_type", "color", "strength"];
+  if (!hasRequiredStringFields(value, requiredFields)) return false;
+
+  const relType = value.relationship_type;
+  if (typeof relType !== "string" || !["desirable_effect", "undesirable_effect", "rollup"].includes(relType)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Type guard to validate Measurement structure
+ */
+export function isValidMeasurement(value: unknown): value is Measurement {
+  if (!isObject(value)) return false;
+  const requiredFields = ["id", "node_id", "metric_name", "expected_value", "actual_value", "measurement_date", "impact_type"];
+  if (!hasRequiredStringFields(value, requiredFields)) return false;
+
+  const impactType = value.impact_type;
+  if (typeof impactType !== "string" || !["proximate", "downstream"].includes(impactType)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Type guard to validate complete TreeData structure
+ */
+export function isValidTreeData(value: unknown): value is TreeData {
+  if (!isObject(value)) return false;
+
+  if (!isValidTree(value.tree)) return false;
+  if (!Array.isArray(value.nodes)) return false;
+  if (!Array.isArray(value.relationships)) return false;
+  if (!Array.isArray(value.measurements)) return false;
+
+  return true;
 }
 
 /**
