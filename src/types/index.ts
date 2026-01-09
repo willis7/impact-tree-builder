@@ -40,6 +40,8 @@ export interface Measurement {
   measurement_date: string;
   measurement_period?: MeasurementPeriod;
   impact_type: "proximate" | "downstream";
+  /** Display order within the node (lower numbers first) */
+  order?: number;
 }
 
 /** Canvas viewport state */

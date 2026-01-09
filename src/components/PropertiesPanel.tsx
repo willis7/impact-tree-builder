@@ -1,4 +1,21 @@
 import { useState, useMemo, useCallback, memo } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +59,7 @@ import {
   Palette,
   FileText,
   Activity,
+  GripVertical,
 } from "lucide-react";
 import {
   sanitizeNodeName,
@@ -62,6 +80,96 @@ interface PropertiesPanelProps {
   onUpdateNode: (nodeId: string, updates: Partial<Node>) => void;
   onDeleteNode: (nodeId: string) => void;
   onAddMeasurement: (measurement: Measurement) => void;
+  onReorderMeasurements?: (measurements: Measurement[]) => void;
+}
+
+/**
+ * Sortable measurement item component
+ */
+interface SortableMeasurementItemProps {
+  measurement: Measurement;
+  index: number;
+  performance: number;
+}
+
+function SortableMeasurementItem({ measurement, index, performance }: SortableMeasurementItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: measurement.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const isGood = performance >= 0.8;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`p-3 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors ${
+        isDragging ? "shadow-lg ring-2 ring-primary/20" : ""
+      }`}
+    >
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <button
+            className="cursor-grab active:cursor-grabbing touch-none p-0.5 -ml-1 text-muted-foreground hover:text-foreground"
+            {...attributes}
+            {...listeners}
+            aria-label="Drag to reorder"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <span className="text-xs text-muted-foreground">
+            {index + 1}.
+          </span>
+          <span className="text-sm font-medium">
+            {measurement.metric_name}
+          </span>
+        </div>
+        <Badge
+          variant={isGood ? "success" : "destructive"}
+          className="text-xs"
+        >
+          {(performance * 100).toFixed(0)}%
+        </Badge>
+      </div>
+      <div className="grid grid-cols-2 gap-3 text-xs pl-6">
+        <div>
+          <span className="text-muted-foreground">
+            Expected
+          </span>
+          <p className="font-medium">
+            {measurement.expected_value}
+          </p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">
+            Actual
+          </span>
+          <p className="font-medium">
+            {measurement.actual_value}
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-2 mt-2 pl-6">
+        <Badge variant="outline" className="text-xs">
+          {measurement.impact_type}
+        </Badge>
+        <Badge variant="outline" className="text-xs">
+          {measurement.measurement_period}
+        </Badge>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -108,6 +216,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   onUpdateNode,
   onDeleteNode,
   onAddMeasurement,
+  onReorderMeasurements,
 }: PropertiesPanelProps) {
   const [measurementDialogOpen, setMeasurementDialogOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(true);
@@ -119,12 +228,45 @@ export const PropertiesPanel = memo(function PropertiesPanel({
     measurement_period: "monthly" as MeasurementPeriod,
   });
 
+  // Configure sensors for drag-and-drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const nodeMeasurements = useMemo(() => {
     if (!selectedNode) return [];
-    return Array.from(measurements.values()).filter(
-      (m) => m.node_id === selectedNode.id
-    );
+    return Array.from(measurements.values())
+      .filter((m) => m.node_id === selectedNode.id)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }, [selectedNode, measurements]);
+
+  // Handle drag end for reordering measurements
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (over && active.id !== over.id && onReorderMeasurements) {
+        const oldIndex = nodeMeasurements.findIndex((m) => m.id === active.id);
+        const newIndex = nodeMeasurements.findIndex((m) => m.id === over.id);
+
+        const reordered = arrayMove(nodeMeasurements, oldIndex, newIndex);
+        // Update order field for each measurement
+        const updatedMeasurements = reordered.map((m, index) => ({
+          ...m,
+          order: index,
+        }));
+        onReorderMeasurements(updatedMeasurements);
+      }
+    },
+    [nodeMeasurements, onReorderMeasurements]
+  );
 
   const calculateMeasurementPerformance = useCallback(
     (measurement: Measurement) => {
@@ -325,63 +467,27 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 </Button>
 
                 {nodeMeasurements.length > 0 ? (
-                  <div className="space-y-2">
-                    {nodeMeasurements.map((measurement, index) => {
-                      const performance =
-                        calculateMeasurementPerformance(measurement);
-                      const isGood = performance >= 0.8;
-
-                      return (
-                        <div
-                          key={measurement.id}
-                          className="p-3 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                {index + 1}.
-                              </span>
-                              <span className="text-sm font-medium">
-                                {measurement.metric_name}
-                              </span>
-                            </div>
-                            <Badge
-                              variant={isGood ? "success" : "destructive"}
-                              className="text-xs"
-                            >
-                              {(performance * 100).toFixed(0)}%
-                            </Badge>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3 text-xs">
-                            <div>
-                              <span className="text-muted-foreground">
-                                Expected
-                              </span>
-                              <p className="font-medium">
-                                {measurement.expected_value}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">
-                                Actual
-                              </span>
-                              <p className="font-medium">
-                                {measurement.actual_value}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2 mt-2">
-                            <Badge variant="outline" className="text-xs">
-                              {measurement.impact_type}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {measurement.measurement_period}
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={nodeMeasurements.map((m) => m.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-2">
+                        {nodeMeasurements.map((measurement, index) => (
+                          <SortableMeasurementItem
+                            key={measurement.id}
+                            measurement={measurement}
+                            index={index}
+                            performance={calculateMeasurementPerformance(measurement)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 ) : (
                   <div className="text-center py-8">
                     <Activity className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />

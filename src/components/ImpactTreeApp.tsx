@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -44,6 +44,8 @@ import { ImpactCanvas } from "./ImpactCanvas";
 import { Sidebar } from "./Sidebar";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { FloatingToolbar } from "./FloatingToolbar";
+import { NodeActionCard } from "./NodeActionCard";
+import { AnimatePresence } from "framer-motion";
 import type { Measurement } from "@/types";
 import type { NodeType } from "@/types/drag";
 import { getNodeTypeLabel } from "@/lib/node-utils";
@@ -215,6 +217,40 @@ export function ImpactTreeApp() {
       new Map(measurements.set(measurement.id, measurement))
     );
   }, [measurements, setMeasurements]);
+
+  // Calculate screen position for NodeActionCard
+  const selectedNodeScreenPosition = useMemo(() => {
+    if (!selectedNodeId || !canvasElement) return null;
+    const node = nodes.get(selectedNodeId);
+    if (!node) return null;
+
+    const rect = canvasElement.getBoundingClientRect();
+    const canvasWidth = viewBox.width / viewBox.scale;
+    const canvasHeight = viewBox.height / viewBox.scale;
+
+    // Convert canvas coordinates to screen coordinates
+    const screenX = ((node.position_x - viewBox.x) / canvasWidth) * rect.width;
+    const screenY = ((node.position_y - viewBox.y) / canvasHeight) * rect.height;
+
+    return { x: screenX, y: screenY };
+  }, [selectedNodeId, nodes, canvasElement, viewBox]);
+
+  // Handler to start connect mode from action card
+  const handleStartConnectFromCard = useCallback((nodeId: string) => {
+    setMode("connect");
+    setConnectSourceNodeId(nodeId);
+  }, [setMode, setConnectSourceNodeId]);
+
+  // Handler to reorder measurements
+  const handleReorderMeasurements = useCallback((reorderedMeasurements: Measurement[]) => {
+    setMeasurements((prev) => {
+      const newMeasurements = new Map(prev);
+      reorderedMeasurements.forEach((m) => {
+        newMeasurements.set(m.id, m);
+      });
+      return newMeasurements;
+    });
+  }, [setMeasurements]);
 
 
 
@@ -410,6 +446,20 @@ export function ImpactTreeApp() {
                  onResetView={canvasOperations.handleResetView}
                  onCenterView={canvasOperations.handleCenterView}
                />
+
+               {/* Node Action Card - appears when node is selected */}
+               <AnimatePresence>
+                 {selectedNodeId && selectedNodeScreenPosition && nodes.get(selectedNodeId) && (
+                   <NodeActionCard
+                     key={selectedNodeId}
+                     node={nodes.get(selectedNodeId)!}
+                     measurements={measurements}
+                     nodePosition={selectedNodeScreenPosition}
+                     onDelete={nodeOperations.deleteNode}
+                     onStartConnect={handleStartConnectFromCard}
+                   />
+                 )}
+               </AnimatePresence>
                </main>
 
              {/* Right Panel */}
@@ -425,6 +475,7 @@ export function ImpactTreeApp() {
                 onUpdateNode={nodeOperations.updateNode}
                 onDeleteNode={nodeOperations.deleteNode}
                onAddMeasurement={handleAddMeasurement}
+               onReorderMeasurements={handleReorderMeasurements}
              />
            </div>
          </TooltipProvider>
