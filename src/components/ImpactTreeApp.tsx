@@ -8,6 +8,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 
+import { useImpactTreeState } from "@/hooks/useImpactTreeState";
 import { useDragNode } from "@/hooks/useDragNode";
 import { useCanvasAutoPan } from "@/hooks/useCanvasAutoPan";
 import { useNodeOperations } from "@/hooks/useNodeOperations";
@@ -48,15 +49,12 @@ import {
   Plus,
   ChevronDown,
 } from "lucide-react";
-import { exportAsJSON, exportAsPNG, exportAsHTML } from "@/lib/export-utils";
-import { validateImportedData } from "@/lib/validation-utils";
 import { ThemeToggle } from "./theme-toggle";
 import { ImpactCanvas } from "./ImpactCanvas";
 import { Sidebar } from "./Sidebar";
 import { PropertiesPanel } from "./PropertiesPanel";
-import type { ImpactTree, Node, Relationship, Measurement } from "@/types";
+import type { Measurement } from "@/types";
 import type { NodeType } from "@/types/drag";
-import { sampleData } from "@/data/sampleData";
 
 /**
  * Main Impact Tree application component
@@ -78,41 +76,36 @@ import { sampleData } from "@/data/sampleData";
  * @returns The complete impact tree application UI
  */
 export function ImpactTreeApp() {
-  const [tree, setTree] = useState<ImpactTree>(sampleData.tree);
-  const [nodes, setNodes] = useState<Map<string, Node>>(
-    new Map(sampleData.nodes.map((n) => [n.id, n]))
-  );
-  const [relationships, setRelationships] = useState<Map<string, Relationship>>(
-    new Map(sampleData.relationships.map((r) => [r.id, r]))
-  );
-  const [measurements, setMeasurements] = useState<Map<string, Measurement>>(
-    new Map(sampleData.measurements.map((m) => [m.id, m]))
-  );
+  // Centralized state management hook
+  const { state, actions, operations } = useImpactTreeState();
+  const {
+    tree,
+    nodes,
+    relationships,
+    measurements,
+    selectedNodeId,
+    selectedRelationshipId,
+    mode,
+    selectedNodeType,
+    connectSourceNodeId,
+    viewBox,
+  } = state;
+  const {
+    setTree,
+    setNodes,
+    setRelationships,
+    setMeasurements,
+    setSelectedNodeId,
+    setSelectedRelationshipId,
+    setMode,
+    setSelectedNodeType,
+    setConnectSourceNodeId,
+    setViewBox,
+  } = actions;
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedRelationshipId, setSelectedRelationshipId] = useState<
-    string | null
-  >(null);
-  const [mode, setMode] = useState<"select" | "add-node" | "connect">("select");
+  // UI-specific state (stays in component)
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
-  const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
-  const [connectSourceNodeId, setConnectSourceNodeId] = useState<string | null>(
-    null
-  );
-  const [viewBox, setViewBox] = useState({
-    x: 0,
-    y: 0,
-    width: 1200,
-    height: 800,
-    scale: 1,
-  });
-
-  // Canvas ref for coordinate transformation
-  const [canvasElement, setCanvasElement] = useState<SVGSVGElement | null>(
-    null
-  );
-
-
+  const [canvasElement, setCanvasElement] = useState<SVGSVGElement | null>(null);
 
   // Track real-time mouse position for accurate drop coordinates
   const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -122,42 +115,6 @@ export function ImpactTreeApp() {
 
   // Track when last drag ended to prevent click events from firing immediately after
   const lastDragEndTimeRef = useRef<number>(0);
-
-  // File input ref for import functionality
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  /**
-   * Creates a new tree with current date and default metadata
-   */
-  const createNewTree = (): ImpactTree => {
-    const now = new Date();
-    const dateString = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-
-    return {
-      id: `tree_${Date.now()}`,
-      name: "New Impact Tree",
-      description: "A new impact analysis tree",
-      created_date: dateString,
-      updated_date: dateString,
-      owner: "User",
-    };
-  };
-
-  /**
-   * Creates a completely new tree, resetting all state
-   */
-  const handleNewTree = () => {
-    setTree(createNewTree());
-    setNodes(new Map());
-    setRelationships(new Map());
-    setMeasurements(new Map());
-    setSelectedNodeId(null);
-    setSelectedRelationshipId(null);
-    setMode("select");
-    setSelectedNodeType(null);
-    setConnectSourceNodeId(null);
-    setViewBox({ x: 0, y: 0, width: 1200, height: 800, scale: 1 });
-  };
 
   // Update mouse position on every move
   useEffect(() => {
@@ -258,114 +215,6 @@ export function ImpactTreeApp() {
 
 
 
-  /**
-   * Saves the current tree state to localStorage
-   * Includes tree metadata, nodes, relationships, and measurements
-   */
-  const handleSave = () => {
-    const data = {
-      tree,
-      nodes: Array.from(nodes.values()),
-      relationships: Array.from(relationships.values()),
-      measurements: Array.from(measurements.values()),
-    };
-    localStorage.setItem("impactTreeData", JSON.stringify(data));
-    alert("Tree saved!");
-  };
-
-  /**
-   * Exports the tree as a JSON file
-   */
-  const handleExportJSON = () => {
-    exportAsJSON(tree, nodes, relationships, measurements);
-  };
-
-  /**
-   * Exports the tree visualization as a PNG image
-   */
-  const handleExportPNG = async () => {
-    try {
-      await exportAsPNG(tree, canvasElement);
-    } catch (error) {
-      console.error('PNG export failed:', error);
-      alert('Failed to export as PNG. Please try again.');
-    }
-  };
-
-  /**
-   * Exports the tree as an HTML page
-   */
-  const handleExportHTML = () => {
-    exportAsHTML(tree, nodes, relationships, measurements);
-  };
-
-  /**
-   * Triggers file picker for importing JSON data
-   */
-  const handleImport = () => {
-    fileInputRef.current?.click();
-  };
-
-
-
-  /**
-   * Processes the selected file and imports the tree data
-   * @param event - File input change event
-   */
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
-      alert('Please select a valid JSON file');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const data = JSON.parse(content);
-
-        // Validate the data
-        const validation = validateImportedData(data);
-        if (!validation.isValid) {
-          alert(`Import failed:\n${validation.errors.join('\n')}`);
-          return;
-        }
-
-        // Import the data
-        setTree(data.tree);
-        setNodes(new Map(data.nodes.map((n: Node) => [n.id, n])));
-        setRelationships(new Map(data.relationships.map((r: Relationship) => [r.id, r])));
-        setMeasurements(new Map(data.measurements.map((m: Measurement) => [m.id, m])));
-
-        // Reset UI state
-        setSelectedNodeId(null);
-        setSelectedRelationshipId(null);
-        setMode('select');
-        setSelectedNodeType(null);
-        setConnectSourceNodeId(null);
-        setViewBox({ x: 0, y: 0, width: 1200, height: 800, scale: 1 });
-
-        alert('Tree imported successfully!');
-      } catch (error) {
-        alert(`Failed to parse JSON file: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    };
-
-    reader.onerror = () => {
-      alert('Failed to read the file');
-    };
-
-    reader.readAsText(file);
-
-    // Reset the input so the same file can be selected again
-    event.target.value = '';
-  };
-
-
-
 
 
 
@@ -440,7 +289,7 @@ export function ImpactTreeApp() {
                    <Button
                      variant="outline"
                      size="sm"
-                     onClick={handleNewTree}
+                     onClick={operations.handleNewTree}
                    >
                     <Plus className="h-4 w-4 mr-2" />
                     New
@@ -451,7 +300,7 @@ export function ImpactTreeApp() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={handleSave}>
+                  <Button variant="outline" size="sm" onClick={operations.handleSave}>
                     <Save className="h-4 w-4 mr-2" />
                     Save
                   </Button>
@@ -461,7 +310,7 @@ export function ImpactTreeApp() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={handleImport}>
+                  <Button variant="outline" size="sm" onClick={operations.handleImport}>
                     <Upload className="h-4 w-4 mr-2" />
                     Load
                   </Button>
@@ -483,15 +332,15 @@ export function ImpactTreeApp() {
                    <TooltipContent>Export tree in different formats</TooltipContent>
                  </Tooltip>
                  <DropdownMenuContent align="end">
-                   <DropdownMenuItem onClick={handleExportJSON}>
+                   <DropdownMenuItem onClick={operations.handleExportJSON}>
                      <Download className="h-4 w-4 mr-2" />
                      Export as JSON
                    </DropdownMenuItem>
-                   <DropdownMenuItem onClick={handleExportPNG}>
+                   <DropdownMenuItem onClick={() => operations.handleExportPNG(canvasElement)}>
                      <Download className="h-4 w-4 mr-2" />
                      Export as PNG
                    </DropdownMenuItem>
-                   <DropdownMenuItem onClick={handleExportHTML}>
+                   <DropdownMenuItem onClick={operations.handleExportHTML}>
                      <Download className="h-4 w-4 mr-2" />
                      Export as HTML
                    </DropdownMenuItem>
@@ -816,10 +665,10 @@ export function ImpactTreeApp() {
 
       {/* Hidden file input for import functionality */}
       <input
-        ref={fileInputRef}
+        ref={operations.fileInputRef}
         type="file"
         accept=".json,application/json"
-        onChange={handleFileSelect}
+        onChange={operations.handleFileSelect}
         style={{ display: 'none' }}
       />
     </DndContext>
