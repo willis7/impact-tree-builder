@@ -143,7 +143,7 @@ describe("ImpactCanvas", () => {
 
     // Should show empty state message
     expect(
-      screen.getByText(/select a node type from the left sidebar/i)
+      screen.getByText(/select a node type from the sidebar/i)
     ).toBeInTheDocument();
   });
 

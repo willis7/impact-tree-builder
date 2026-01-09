@@ -43,7 +43,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { ImpactCanvas } from "./ImpactCanvas";
 import { Sidebar } from "./Sidebar";
 import { PropertiesPanel } from "./PropertiesPanel";
-import { CanvasControls } from "./CanvasControls";
+import { FloatingToolbar } from "./FloatingToolbar";
 import type { Measurement } from "@/types";
 import type { NodeType } from "@/types/drag";
 import { getNodeTypeLabel } from "@/lib/node-utils";
@@ -401,8 +401,10 @@ export function ImpactTreeApp() {
                   onZoom={canvasOperations.handleZoom}
                />
 
-               {/* Canvas Controls */}
-               <CanvasControls
+               {/* Floating Toolbar */}
+               <FloatingToolbar
+                 treeName={tree.name}
+                 zoomLevel={viewBox.scale}
                  onZoomIn={() => canvasOperations.handleZoom(1.2)}
                  onZoomOut={() => canvasOperations.handleZoom(0.8)}
                  onResetView={canvasOperations.handleResetView}

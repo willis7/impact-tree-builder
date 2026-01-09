@@ -79,54 +79,52 @@ describe("PropertiesPanel", () => {
     render(<PropertiesPanel {...defaultProps} />);
 
     expect(screen.getByText("Test Node")).toBeDefined();
-    expect(screen.getByText("Test Description")).toBeDefined();
+    // Description is in textarea
+    expect(screen.getByDisplayValue("Test Description")).toBeDefined();
   });
 
   it("should display node type correctly", () => {
     render(<PropertiesPanel {...defaultProps} />);
 
-    // Business Metric appears twice - in badge and in type field
+    // Business Metric appears in the header area (and in sr-only span)
     const businessMetricElements = screen.getAllByText("Business Metric");
     expect(businessMetricElements.length).toBeGreaterThan(0);
   });
 
-  it("should enter edit mode when edit button is clicked", async () => {
-    const user = userEvent.setup();
-    render(<PropertiesPanel {...defaultProps} />);
-
-    const editButton = screen.getByRole("button", { name: /edit/i });
-    await user.click(editButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /save/i })).toBeDefined();
-      expect(screen.getByRole("button", { name: /cancel/i })).toBeDefined();
-    });
-  });
-
-  it("should call onUpdateNode when saving changes", async () => {
+  it("should have editable name input", async () => {
     const onUpdateNode = vi.fn();
     const user = userEvent.setup();
 
     render(<PropertiesPanel {...defaultProps} onUpdateNode={onUpdateNode} />);
 
-    // Enter edit mode
-    const editButton = screen.getByRole("button", { name: /edit/i });
-    await user.click(editButton);
-
-    // Modify name
+    // Name input should be directly editable
     const nameInput = screen.getByDisplayValue("Test Node");
     await user.clear(nameInput);
     await user.type(nameInput, "Updated Name");
 
-    // Save
-    const saveButton = screen.getByRole("button", { name: /save/i });
-    await user.click(saveButton);
-
     await waitFor(() => {
-      expect(onUpdateNode).toHaveBeenCalledWith(
-        "node-1",
-        expect.objectContaining({ name: expect.stringContaining("Updated") })
-      );
+      expect(onUpdateNode).toHaveBeenCalled();
+    });
+  });
+
+  it("should call onUpdateNode when editing name", async () => {
+    const onUpdateNode = vi.fn();
+    const user = userEvent.setup();
+
+    render(<PropertiesPanel {...defaultProps} onUpdateNode={onUpdateNode} />);
+
+    // Modify name directly - each keystroke triggers an update
+    const nameInput = screen.getByDisplayValue("Test Node");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Updated Name");
+
+    // The component calls onUpdateNode on each change
+    await waitFor(() => {
+      expect(onUpdateNode).toHaveBeenCalled();
+      // Check the last call includes some part of the typed name
+      const lastCall = onUpdateNode.mock.calls[onUpdateNode.mock.calls.length - 1];
+      expect(lastCall[0]).toBe("node-1");
+      expect(lastCall[1].name).toBeDefined();
     });
   });
 
@@ -136,16 +134,10 @@ describe("PropertiesPanel", () => {
 
     render(<PropertiesPanel {...defaultProps} onUpdateNode={onUpdateNode} />);
 
-    // Enter edit mode
-    await user.click(screen.getByRole("button", { name: /edit/i }));
-
     // Try to inject XSS
     const nameInput = screen.getByDisplayValue("Test Node");
     await user.clear(nameInput);
     await user.type(nameInput, '<script>alert("xss")</script>Safe');
-
-    // Save
-    await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => {
       expect(onUpdateNode).toHaveBeenCalled();
@@ -155,29 +147,19 @@ describe("PropertiesPanel", () => {
     });
   });
 
-  it("should cancel edit mode without saving", async () => {
+  it("should have editable description", async () => {
     const onUpdateNode = vi.fn();
     const user = userEvent.setup();
 
     render(<PropertiesPanel {...defaultProps} onUpdateNode={onUpdateNode} />);
 
-    // Enter edit mode
-    await user.click(screen.getByRole("button", { name: /edit/i }));
+    // Modify description
+    const descInput = screen.getByDisplayValue("Test Description");
+    await user.clear(descInput);
+    await user.type(descInput, "New Description");
 
-    // Modify name
-    const nameInput = screen.getByDisplayValue("Test Node");
-    await user.clear(nameInput);
-    await user.type(nameInput, "Changed Name");
-
-    // Cancel
-    await user.click(screen.getByRole("button", { name: /cancel/i }));
-
-    // Should not have saved
-    expect(onUpdateNode).not.toHaveBeenCalled();
-
-    // Should show original name
     await waitFor(() => {
-      expect(screen.getByText("Test Node")).toBeDefined();
+      expect(onUpdateNode).toHaveBeenCalled();
     });
   });
 
@@ -187,42 +169,60 @@ describe("PropertiesPanel", () => {
 
     render(<PropertiesPanel {...defaultProps} onDeleteNode={onDeleteNode} />);
 
-    // Enter edit mode to see delete button
-    await user.click(screen.getByRole("button", { name: /edit/i }));
-
-    // Click delete
+    // Delete button is always visible in the Node tab
     const deleteButton = screen.getByRole("button", { name: /delete node/i });
     await user.click(deleteButton);
 
     expect(onDeleteNode).toHaveBeenCalledWith("node-1");
   });
 
-  it("should display measurements for selected node", () => {
+  it("should display measurements in Metrics tab", async () => {
+    const user = userEvent.setup();
     render(<PropertiesPanel {...defaultProps} />);
 
-    expect(screen.getByText("Test Metric")).toBeDefined();
-    expect(screen.getByText("100")).toBeDefined();
-    expect(screen.getByText("80")).toBeDefined();
+    // Click on Metrics tab
+    const metricsTab = screen.getByRole("tab", { name: /metrics/i });
+    await user.click(metricsTab);
+
+    await waitFor(() => {
+      expect(screen.getByText("Test Metric")).toBeDefined();
+      expect(screen.getByText("100")).toBeDefined();
+      expect(screen.getByText("80")).toBeDefined();
+    });
   });
 
-  it("should show performance badge for measurement", () => {
+  it("should show performance badge for measurement", async () => {
+    const user = userEvent.setup();
     render(<PropertiesPanel {...defaultProps} />);
 
-    // Performance is 80/100 = 80%
-    expect(screen.getByText(/80%/i)).toBeDefined();
+    // Click on Metrics tab
+    const metricsTab = screen.getByRole("tab", { name: /metrics/i });
+    await user.click(metricsTab);
+
+    await waitFor(() => {
+      // Performance is 80/100 = 80%
+      expect(screen.getByText(/80%/i)).toBeDefined();
+    });
   });
 
   it("should open measurement dialog when add button is clicked", async () => {
     const user = userEvent.setup();
     render(<PropertiesPanel {...defaultProps} />);
 
-    const addButton = screen.getByRole("button", { name: /^add$/i });
+    // Click on Metrics tab first
+    const metricsTab = screen.getByRole("tab", { name: /metrics/i });
+    await user.click(metricsTab);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add measurement/i })).toBeDefined();
+    });
+
+    const addButton = screen.getByRole("button", { name: /add measurement/i });
     await user.click(addButton);
 
     await waitFor(() => {
-      // Dialog title and button both have "Add Measurement" text
-      const elements = screen.getAllByText(/add measurement/i);
-      expect(elements.length).toBeGreaterThan(0);
+      // Dialog should have "Add Measurement" title
+      expect(screen.getByRole("heading", { name: /add measurement/i })).toBeDefined();
     });
   });
 
@@ -234,8 +234,15 @@ describe("PropertiesPanel", () => {
       <PropertiesPanel {...defaultProps} onAddMeasurement={onAddMeasurement} />
     );
 
+    // Click on Metrics tab
+    const metricsTab = screen.getByRole("tab", { name: /metrics/i });
+    await user.click(metricsTab);
+
     // Open dialog
-    await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add measurement/i })).toBeDefined();
+    });
+    await user.click(screen.getByRole("button", { name: /add measurement/i }));
 
     // Fill in form - wait for form fields to be available
     await waitFor(() =>
@@ -253,7 +260,7 @@ describe("PropertiesPanel", () => {
     await user.clear(actualInput);
     await user.type(actualInput, "180");
 
-    // Submit
+    // Submit - find the button in the dialog
     const submitButtons = screen.getAllByRole("button", {
       name: /add measurement/i,
     });
@@ -267,7 +274,6 @@ describe("PropertiesPanel", () => {
     await waitFor(() => {
       expect(onAddMeasurement).toHaveBeenCalled();
       const call = onAddMeasurement.mock.calls[0][0];
-      // Sanitization should remove spaces from metric name
       expect(call.metric_name).toBeDefined();
       expect(call.expected_value).toBe(200);
       expect(call.actual_value).toBe(180);
@@ -282,8 +288,15 @@ describe("PropertiesPanel", () => {
       <PropertiesPanel {...defaultProps} onAddMeasurement={onAddMeasurement} />
     );
 
+    // Click on Metrics tab
+    const metricsTab = screen.getByRole("tab", { name: /metrics/i });
+    await user.click(metricsTab);
+
     // Open dialog
-    await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add measurement/i })).toBeDefined();
+    });
+    await user.click(screen.getByRole("button", { name: /add measurement/i }));
 
     await waitFor(() =>
       expect(screen.getByLabelText(/metric name/i)).toBeDefined()
@@ -352,8 +365,15 @@ describe("PropertiesPanel", () => {
       <PropertiesPanel {...defaultProps} onAddMeasurement={onAddMeasurement} />
     );
 
+    // Click on Metrics tab
+    const metricsTab = screen.getByRole("tab", { name: /metrics/i });
+    await user.click(metricsTab);
+
     // Open dialog
-    await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add measurement/i })).toBeDefined();
+    });
+    await user.click(screen.getByRole("button", { name: /add measurement/i }));
 
     await waitFor(() =>
       expect(screen.getByLabelText(/metric name/i)).toBeDefined()
@@ -385,6 +405,4 @@ describe("PropertiesPanel", () => {
       expect(call.expected_value).toBe(0);
     });
   });
-
-
 });

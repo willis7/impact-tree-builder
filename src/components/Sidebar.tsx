@@ -1,19 +1,32 @@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useMemo, useCallback, memo } from "react";
-import { Link2 } from "lucide-react";
+import { useState, useMemo, useCallback, memo } from "react";
+import {
+  Search,
+  Link2,
+  TrendingUp,
+  BarChart3,
+  Lightbulb,
+  GripVertical,
+  Layers,
+  GitBranch,
+  Activity,
+} from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
 import type { ImpactTree, Node, Relationship, Measurement } from "@/types";
 import type { NodeType } from "@/types/drag";
@@ -26,41 +39,41 @@ import { NODE_TYPE_CONFIG } from "@/lib/node-utils";
 interface NodeButtonConfig {
   nodeType: NodeType;
   label: string;
-  colorClass: string;
-  shapeClass: string;
+  icon: React.ElementType;
+  gradientClass: string;
   tooltipText: string;
 }
 
 /**
- * Node button configurations derived from NODE_TYPE_CONFIG
+ * Node button configurations with icons and gradient colors
  */
 const NODE_BUTTON_CONFIGS: NodeButtonConfig[] = [
   {
     nodeType: "business_metric",
     label: NODE_TYPE_CONFIG.business_metric.label,
-    colorClass: `bg-[${NODE_TYPE_CONFIG.business_metric.color}]`,
-    shapeClass: "rounded",
+    icon: TrendingUp,
+    gradientClass: "from-blue-500 to-cyan-500",
     tooltipText: "Add a business outcome or goal metric",
   },
   {
     nodeType: "product_metric",
     label: NODE_TYPE_CONFIG.product_metric.label,
-    colorClass: `bg-[${NODE_TYPE_CONFIG.product_metric.color}]`,
-    shapeClass: "rounded",
+    icon: BarChart3,
+    gradientClass: "from-emerald-500 to-green-500",
     tooltipText: "Add a product or feature metric",
   },
   {
     nodeType: "initiative_positive",
-    label: NODE_TYPE_CONFIG.initiative_positive.label,
-    colorClass: `bg-[${NODE_TYPE_CONFIG.initiative_positive.color}]`,
-    shapeClass: "rounded-full",
+    label: "Positive Initiative",
+    icon: Lightbulb,
+    gradientClass: "from-violet-500 to-purple-500",
     tooltipText: "Add an initiative with positive impact",
   },
   {
     nodeType: "initiative_negative",
-    label: NODE_TYPE_CONFIG.initiative_negative.label,
-    colorClass: `bg-[${NODE_TYPE_CONFIG.initiative_negative.color}]`,
-    shapeClass: "rounded-full",
+    label: "Negative Initiative",
+    icon: Lightbulb,
+    gradientClass: "from-red-500 to-rose-500",
     tooltipText: "Add an initiative with negative impact",
   },
 ];
@@ -69,23 +82,14 @@ const NODE_BUTTON_CONFIGS: NodeButtonConfig[] = [
  * Props for the Sidebar component
  */
 interface SidebarProps {
-  /** The current impact tree data */
   tree: ImpactTree;
-  /** Callback to update tree information (name, description) */
   onTreeUpdate: (tree: ImpactTree) => void;
-  /** Current interaction mode: select (default), add-node, or connect (relationship) */
   mode: "select" | "add-node" | "connect";
-  /** Callback to change the interaction mode */
   onModeChange: (mode: "select" | "add-node" | "connect") => void;
-  /** Currently selected node type for adding */
   selectedNodeType: NodeType | null;
-  /** Callback when a node type is selected */
   onNodeTypeSelect: (type: NodeType) => void;
-  /** Map of all nodes in the tree by ID */
   nodes: Map<string, Node>;
-  /** Map of all relationships in the tree by ID */
   relationships: Map<string, Relationship>;
-  /** Map of all measurements in the tree by ID */
   measurements: Map<string, Measurement>;
 }
 
@@ -93,35 +97,23 @@ interface SidebarProps {
  * Props for the DraggableNodeButton component
  */
 interface DraggableNodeButtonProps {
-  /** Node type identifier */
   nodeType: NodeType;
-  /** Display label for the button */
   label: string;
-  /** Background color for the node type indicator */
-  colorClass: string;
-  /** Border radius class (rounded for rectangles, rounded-full for circles) */
-  shapeClass: string;
-  /** Tooltip description */
+  icon: React.ElementType;
+  gradientClass: string;
   tooltipText: string;
-  /** Whether this button is currently selected */
   isSelected: boolean;
-  /** Click handler for the button */
   onClick: () => void;
 }
 
 /**
- * Draggable node type button component
- * Supports both click-to-add and drag-to-add workflows (FR-014)
- * Wrapped with React.memo to prevent unnecessary re-renders
- *
- * @param props - Component props
- * @returns A draggable button element
+ * Draggable node type button with modern styling
  */
 const DraggableNodeButton = memo(function DraggableNodeButton({
   nodeType,
   label,
-  colorClass,
-  shapeClass,
+  icon: Icon,
+  gradientClass,
   tooltipText,
   isSelected,
   onClick,
@@ -138,21 +130,26 @@ const DraggableNodeButton = memo(function DraggableNodeButton({
       <TooltipTrigger asChild>
         <Button
           ref={setNodeRef}
-          variant={isSelected ? "default" : "outline"}
-          className={`w-full justify-start transition-all duration-200 ${
+          variant={isSelected ? "default" : "ghost"}
+          className={`w-full justify-start gap-3 h-10 px-2 transition-all duration-200 ${
             isDragging
               ? "opacity-50 cursor-grabbing"
-              : "cursor-grab hover:scale-[1.02]"
-          }`}
+              : "cursor-grab hover:bg-accent"
+          } ${isSelected ? "bg-primary text-primary-foreground" : ""}`}
           onClick={onClick}
           {...listeners}
           {...attributes}
         >
-          <div className={`w-6 h-4 ${shapeClass} ${colorClass} mr-3`} />
-          {label}
+          <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+          <div
+            className={`w-8 h-8 rounded-lg bg-gradient-to-br ${gradientClass} flex items-center justify-center shadow-sm`}
+          >
+            <Icon className="h-4 w-4 text-white" />
+          </div>
+          <span className="flex-1 text-left text-sm">{label}</span>
         </Button>
       </TooltipTrigger>
-      <TooltipContent>
+      <TooltipContent side="right">
         <p>{tooltipText}</p>
         <p className="text-xs text-muted-foreground mt-1">
           Click or drag to canvas
@@ -163,18 +160,36 @@ const DraggableNodeButton = memo(function DraggableNodeButton({
 });
 
 /**
- * Sidebar component for impact tree management
- *
- * Provides controls for:
- * - Editing tree information (name and description)
- * - Adding nodes by type (Business Metric, Product Metric, Initiative)
- * - Managing relationships between nodes
- * - Viewing tree statistics (node counts, relationship counts, measurement coverage)
- *
- * All user inputs are sanitized to prevent XSS attacks using DOMPurify.
- *
- * @param props - Component props
- * @returns The sidebar UI element
+ * Stat card component for statistics section
+ */
+interface StatCardProps {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+  colorClass: string;
+}
+
+const StatCard = memo(function StatCard({
+  icon: Icon,
+  label,
+  value,
+  colorClass,
+}: StatCardProps) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors">
+      <div className={`p-2 rounded-lg ${colorClass}`}>
+        <Icon className="h-4 w-4 text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-muted-foreground truncate">{label}</p>
+        <p className="text-lg font-semibold">{value}</p>
+      </div>
+    </div>
+  );
+});
+
+/**
+ * Modern Sidebar component with collapsible sections
  */
 export function Sidebar({
   tree,
@@ -187,168 +202,231 @@ export function Sidebar({
   relationships,
   measurements,
 }: SidebarProps) {
-  /**
-   * Handles node type button clicks
-   * Activates add-node mode with the selected type
-   * Memoized with useCallback to prevent child re-renders
-   * @param type - The node type identifier
-   */
-  const handleNodeTypeClick = useCallback((type: NodeType) => {
-    onNodeTypeSelect(type);
-    onModeChange("add-node");
-  }, [onNodeTypeSelect, onModeChange]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openSections, setOpenSections] = useState({
+    addNodes: true,
+    treeInfo: true,
+    tools: true,
+    statistics: true,
+  });
 
-  /**
-   * Handles tree name change with sanitization
-   * Memoized to prevent unnecessary re-renders
-   */
-  const handleTreeNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onTreeUpdate({
-      ...tree,
-      name: sanitizeInput(e.target.value),
-    });
-  }, [tree, onTreeUpdate]);
+  const handleNodeTypeClick = useCallback(
+    (type: NodeType) => {
+      onNodeTypeSelect(type);
+      onModeChange("add-node");
+    },
+    [onNodeTypeSelect, onModeChange]
+  );
 
-  /**
-   * Handles tree description change with sanitization
-   * Memoized to prevent unnecessary re-renders
-   */
-  const handleTreeDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onTreeUpdate({
-      ...tree,
-      description: sanitizeDescription(e.target.value),
-    });
-  }, [tree, onTreeUpdate]);
+  const handleTreeNameChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onTreeUpdate({
+        ...tree,
+        name: sanitizeInput(e.target.value),
+      });
+    },
+    [tree, onTreeUpdate]
+  );
 
-  // Track which nodes have measurements for statistics
-  const measuredNodes = useMemo(() => {
+  const handleTreeDescriptionChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      onTreeUpdate({
+        ...tree,
+        description: sanitizeDescription(e.target.value),
+      });
+    },
+    [tree, onTreeUpdate]
+  );
+
+  const toggleSection = useCallback(
+    (section: keyof typeof openSections) => {
+      setOpenSections((prev) => ({
+        ...prev,
+        [section]: !prev[section],
+      }));
+    },
+    []
+  );
+
+  const measuredNodesCount = useMemo(() => {
     const nodeSet = new Set<string>();
-    measurements.forEach(measurement => {
+    measurements.forEach((measurement) => {
       nodeSet.add(measurement.node_id);
     });
-    return nodeSet;
+    return nodeSet.size;
   }, [measurements]);
 
+  // Filter node buttons based on search
+  const filteredNodeConfigs = useMemo(() => {
+    if (!searchQuery.trim()) return NODE_BUTTON_CONFIGS;
+    const query = searchQuery.toLowerCase();
+    return NODE_BUTTON_CONFIGS.filter(
+      (config) =>
+        config.label.toLowerCase().includes(query) ||
+        config.tooltipText.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
+
   return (
-    <aside className="w-80 border-r bg-card flex flex-col h-full">
+    <aside className="w-72 border-r bg-card flex flex-col h-full">
+      {/* Search Header */}
+      <div className="p-4 border-b">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search nodes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-9 bg-secondary/50"
+          />
+        </div>
+      </div>
+
       <ScrollArea className="flex-1">
         <TooltipProvider>
-          {/* Tree Information */}
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold">Tree Information</h3>
-              <Badge variant="outline">{nodes.size} nodes</Badge>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="treeName" className="text-xs">
-                  Name
-                </Label>
-                <Input
-                  id="treeName"
-                  value={tree.name}
-                  onChange={handleTreeNameChange}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="treeDescription" className="text-xs">
-                  Description
-                </Label>
-                <Textarea
-                  id="treeDescription"
-                  value={tree.description}
-                  onChange={handleTreeDescriptionChange}
-                  rows={3}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Add Nodes */}
-          <div className="p-4">
-            <h3 className="font-semibold mb-3">Add Nodes</h3>
-            <div className="space-y-2">
-              {NODE_BUTTON_CONFIGS.map((config) => (
-                <DraggableNodeButton
-                  key={config.nodeType}
-                  nodeType={config.nodeType}
-                  label={config.label}
-                  colorClass={config.colorClass}
-                  shapeClass={config.shapeClass}
-                  tooltipText={config.tooltipText}
-                  isSelected={
-                    mode === "add-node" && selectedNodeType === config.nodeType
-                  }
-                  onClick={() => handleNodeTypeClick(config.nodeType)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Relationship Tools */}
-          <div className="p-4">
-            <h3 className="font-semibold mb-3">Relationship Tools</h3>
-            <Button
-              variant={mode === "connect" ? "default" : "outline"}
-              className="w-full justify-start"
-              onClick={() => onModeChange("connect")}
+          <div className="p-3 space-y-1">
+            {/* Add Nodes Section */}
+            <Collapsible
+              open={openSections.addNodes}
+              onOpenChange={() => toggleSection("addNodes")}
             >
-              <Link2 className="h-4 w-4 mr-3" />
-              Connect Nodes
-              {mode === "connect" && (
-                <Badge variant="secondary" className="ml-auto">
-                  Active
-                </Badge>
-              )}
-            </Button>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Click two nodes to connect them. Relationship type is determined automatically based on node types.
-            </p>
-          </div>
+              <CollapsibleTrigger className="px-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">
+                Add Nodes
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="space-y-1 mt-1">
+                  {filteredNodeConfigs.map((config) => (
+                    <DraggableNodeButton
+                      key={config.nodeType}
+                      nodeType={config.nodeType}
+                      label={config.label}
+                      icon={config.icon}
+                      gradientClass={config.gradientClass}
+                      tooltipText={config.tooltipText}
+                      isSelected={
+                        mode === "add-node" &&
+                        selectedNodeType === config.nodeType
+                      }
+                      onClick={() => handleNodeTypeClick(config.nodeType)}
+                    />
+                  ))}
+                  {filteredNodeConfigs.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      No node types match your search
+                    </p>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
-          <Separator />
+            {/* Tree Info Section */}
+            <Collapsible
+              open={openSections.treeInfo}
+              onOpenChange={() => toggleSection("treeInfo")}
+            >
+              <CollapsibleTrigger className="px-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">
+                Tree Info
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="space-y-3 px-2 mt-2">
+                  <div>
+                    <Label htmlFor="treeName" className="text-xs">
+                      Name
+                    </Label>
+                    <Input
+                      id="treeName"
+                      value={tree.name}
+                      onChange={handleTreeNameChange}
+                      className="mt-1 h-8"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="treeDescription" className="text-xs">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="treeDescription"
+                      value={tree.description}
+                      onChange={handleTreeDescriptionChange}
+                      rows={2}
+                      className="mt-1 min-h-[60px]"
+                    />
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
-          {/* Statistics */}
-          <div className="p-4">
-            <h3 className="font-semibold mb-3">Statistics</h3>
-            <div className="space-y-2">
-              <Card>
-                <CardContent className="p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Total Nodes
-                    </span>
-                    <Badge variant="default">{nodes.size}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Relationships
-                    </span>
-                    <Badge variant="default">{relationships.size}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Measured Nodes
-                    </span>
-                    <Badge variant="default">{measuredNodes.size}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Tools Section */}
+            <Collapsible
+              open={openSections.tools}
+              onOpenChange={() => toggleSection("tools")}
+            >
+              <CollapsibleTrigger className="px-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">
+                Tools
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="px-2 mt-2">
+                  <Button
+                    variant={mode === "connect" ? "default" : "ghost"}
+                    className="w-full justify-start gap-3 h-10"
+                    onClick={() => onModeChange("connect")}
+                  >
+                    <div
+                      className={`p-2 rounded-lg ${mode === "connect" ? "bg-white/20" : "bg-secondary"}`}
+                    >
+                      <Link2 className="h-4 w-4" />
+                    </div>
+                    <span className="flex-1 text-left">Connect Nodes</span>
+                    {mode === "connect" && (
+                      <Badge variant="secondary" className="text-xs">
+                        Active
+                      </Badge>
+                    )}
+                  </Button>
+                  <p className="mt-2 text-xs text-muted-foreground px-2">
+                    Click two nodes to connect them
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Statistics Section */}
+            <Collapsible
+              open={openSections.statistics}
+              onOpenChange={() => toggleSection("statistics")}
+            >
+              <CollapsibleTrigger className="px-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">
+                Statistics
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="grid grid-cols-2 gap-2 px-2 mt-2">
+                  <StatCard
+                    icon={Layers}
+                    label="Nodes"
+                    value={nodes.size}
+                    colorClass="bg-blue-500"
+                  />
+                  <StatCard
+                    icon={GitBranch}
+                    label="Relations"
+                    value={relationships.size}
+                    colorClass="bg-purple-500"
+                  />
+                  <StatCard
+                    icon={Activity}
+                    label="Measured"
+                    value={measuredNodesCount}
+                    colorClass="bg-emerald-500"
+                  />
+                  <StatCard
+                    icon={BarChart3}
+                    label="Metrics"
+                    value={measurements.size}
+                    colorClass="bg-amber-500"
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </TooltipProvider>
       </ScrollArea>
