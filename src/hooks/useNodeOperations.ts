@@ -54,30 +54,35 @@ export function useNodeOperations(
           color: "#2E7D32",
           shape: "rectangle" as const,
           level: 1,
+          defaultName: "New Business Metric",
         };
       case "product_metric":
         return {
           color: "#1976D2",
           shape: "rectangle" as const,
           level: 2,
+          defaultName: "New Product Metric",
         };
       case "initiative_positive":
         return {
           color: "#FF6F00",
           shape: "ellipse" as const,
           level: 3,
+          defaultName: "New Initiative",
         };
       case "initiative_negative":
         return {
           color: "#D32F2F",
           shape: "ellipse" as const,
           level: 3,
+          defaultName: "New Risk",
         };
       default:
         return {
           color: "#1976D2",
           shape: "rectangle" as const,
           level: 2,
+          defaultName: "New Node",
         };
     }
   };
@@ -113,11 +118,11 @@ export function useNodeOperations(
       timestamp: now,
     };
 
-    const { color, shape, level } = getNodeProperties(typeToUse);
+    const { color, shape, level, defaultName } = getNodeProperties(typeToUse);
 
     const newNode: Node = {
       id: nodeId,
-      name: "New Node",
+      name: defaultName,
       description: "",
       node_type: typeToUse as Node["node_type"],
       level,

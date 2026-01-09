@@ -24,11 +24,6 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -56,7 +51,6 @@ import {
   BarChart3,
   Lightbulb,
   ArrowRight,
-  Palette,
   FileText,
   Activity,
   GripVertical,
@@ -80,7 +74,9 @@ interface PropertiesPanelProps {
   onUpdateNode: (nodeId: string, updates: Partial<Node>) => void;
   onDeleteNode: (nodeId: string) => void;
   onAddMeasurement: (measurement: Measurement) => void;
+  onDeleteMeasurement?: (measurementId: string) => void;
   onReorderMeasurements?: (measurements: Measurement[]) => void;
+  onDeleteRelationship?: (relationshipId: string) => void;
 }
 
 /**
@@ -90,9 +86,10 @@ interface SortableMeasurementItemProps {
   measurement: Measurement;
   index: number;
   performance: number;
+  onDelete?: (measurementId: string) => void;
 }
 
-function SortableMeasurementItem({ measurement, index, performance }: SortableMeasurementItemProps) {
+function SortableMeasurementItem({ measurement, index, performance, onDelete }: SortableMeasurementItemProps) {
   const {
     attributes,
     listeners,
@@ -135,12 +132,23 @@ function SortableMeasurementItem({ measurement, index, performance }: SortableMe
             {measurement.metric_name}
           </span>
         </div>
-        <Badge
-          variant={isGood ? "success" : "destructive"}
-          className="text-xs"
-        >
-          {(performance * 100).toFixed(0)}%
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant={isGood ? "success" : "destructive"}
+            className="text-xs"
+          >
+            {(performance * 100).toFixed(0)}%
+          </Badge>
+          {onDelete && (
+            <button
+              onClick={() => onDelete(measurement.id)}
+              className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+              aria-label={`Delete measurement ${measurement.metric_name}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3 text-xs pl-6">
         <div>
@@ -216,10 +224,11 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   onUpdateNode,
   onDeleteNode,
   onAddMeasurement,
+  onDeleteMeasurement,
   onReorderMeasurements,
+  onDeleteRelationship,
 }: PropertiesPanelProps) {
   const [measurementDialogOpen, setMeasurementDialogOpen] = useState(false);
-  const [appearanceOpen, setAppearanceOpen] = useState(true);
   const [newMeasurement, setNewMeasurement] = useState({
     metric_name: "",
     expected_value: 0,
@@ -378,66 +387,6 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                   />
                 </div>
 
-                {/* Appearance Section */}
-                <Collapsible
-                  open={appearanceOpen}
-                  onOpenChange={setAppearanceOpen}
-                >
-                  <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider hover:text-foreground">
-                    <Palette className="h-3.5 w-3.5" />
-                    Appearance
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="space-y-3 mt-3">
-                      <div>
-                        <Label className="text-xs">Color</Label>
-                        <div className="flex gap-2 mt-1.5">
-                          {[
-                            "#2E7D32",
-                            "#1976D2",
-                            "#FF6F00",
-                            "#D32F2F",
-                            "#7B1FA2",
-                            "#00838F",
-                          ].map((color) => (
-                            <button
-                              key={color}
-                              className={`w-7 h-7 rounded-lg transition-all ${
-                                selectedNode.color === color
-                                  ? "ring-2 ring-ring ring-offset-2"
-                                  : "hover:scale-110"
-                              }`}
-                              style={{ backgroundColor: color }}
-                              onClick={() =>
-                                onUpdateNode(selectedNode.id, { color })
-                              }
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Shape</Label>
-                        <Select
-                          value={selectedNode.shape}
-                          onValueChange={(value) =>
-                            onUpdateNode(selectedNode.id, {
-                              shape: value as "rectangle" | "ellipse",
-                            })
-                          }
-                        >
-                          <SelectTrigger className="mt-1.5">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="rectangle">Rectangle</SelectItem>
-                            <SelectItem value="ellipse">Ellipse</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-
                 {/* Delete */}
                 <div className="pt-3 border-t">
                   <Button
@@ -483,6 +432,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                             measurement={measurement}
                             index={index}
                             performance={calculateMeasurementPerformance(measurement)}
+                            onDelete={onDeleteMeasurement}
                           />
                         ))}
                       </div>
@@ -671,6 +621,21 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               </Badge>
             </div>
           </div>
+
+          {/* Delete Relationship */}
+          {onDeleteRelationship && (
+            <div className="pt-3 border-t">
+              <Button
+                onClick={() => onDeleteRelationship(selectedRelationship.id)}
+                variant="ghost"
+                size="sm"
+                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Relationship
+              </Button>
+            </div>
+          )}
         </div>
       </aside>
     );

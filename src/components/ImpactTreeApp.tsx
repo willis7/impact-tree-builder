@@ -257,8 +257,24 @@ export function ImpactTreeApp() {
     });
   }, [setMeasurements]);
 
+  // Handler to delete a measurement
+  const handleDeleteMeasurement = useCallback((measurementId: string) => {
+    setMeasurements((prev) => {
+      const newMeasurements = new Map(prev);
+      newMeasurements.delete(measurementId);
+      return newMeasurements;
+    });
+  }, [setMeasurements]);
 
-
+  // Handler to delete a relationship
+  const handleDeleteRelationship = useCallback((relationshipId: string) => {
+    setRelationships((prev) => {
+      const newRelationships = new Map(prev);
+      newRelationships.delete(relationshipId);
+      return newRelationships;
+    });
+    setSelectedRelationshipId(null);
+  }, [setRelationships, setSelectedRelationshipId]);
 
 
 
@@ -521,7 +537,9 @@ export function ImpactTreeApp() {
                   onUpdateNode={nodeOperations.updateNode}
                   onDeleteNode={nodeOperations.deleteNode}
                  onAddMeasurement={handleAddMeasurement}
+                 onDeleteMeasurement={handleDeleteMeasurement}
                  onReorderMeasurements={handleReorderMeasurements}
+                 onDeleteRelationship={handleDeleteRelationship}
                />
              </div>
            </div>
