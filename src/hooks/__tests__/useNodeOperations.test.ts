@@ -106,7 +106,7 @@ describe("useNodeOperations", () => {
       const newNodesMap = mockActions.setNodes.mock.calls[0][0] as Map<string, Node>;
       const node = Array.from(newNodesMap.values())[0] as Node;
 
-      expect(node.node_type).toBe("initiative");
+      expect(node.node_type).toBe("initiative_positive");
       expect(node.level).toBe(3);
       expect(node.color).toBe("#FF6F00");
       expect(node.shape).toBe("ellipse");
@@ -125,7 +125,7 @@ describe("useNodeOperations", () => {
       const newNodesMap = mockActions.setNodes.mock.calls[0][0] as Map<string, Node>;
       const node = Array.from(newNodesMap.values())[0] as Node;
 
-      expect(node.node_type).toBe("initiative");
+      expect(node.node_type).toBe("initiative_negative");
       expect(node.level).toBe(3);
       expect(node.color).toBe("#D32F2F");
       expect(node.shape).toBe("ellipse");

@@ -119,9 +119,7 @@ export function useNodeOperations(
       id: nodeId,
       name: "New Node",
       description: "",
-      node_type: typeToUse
-        .replace("_positive", "")
-        .replace("_negative", "") as Node["node_type"],
+      node_type: typeToUse as Node["node_type"],
       level,
       position_x: x,
       position_y: y,

@@ -11,7 +11,7 @@ export interface Node {
   id: string;
   name: string;
   description: string;
-  node_type: "business_metric" | "product_metric" | "initiative";
+  node_type: "business_metric" | "product_metric" | "initiative" | "initiative_positive" | "initiative_negative";
   level: number;
   position_x: number;
   position_y: number;
