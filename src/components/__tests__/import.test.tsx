@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ImpactTreeApp } from "../ImpactTreeApp";
+import * as useToastModule from "@/hooks/use-toast";
 
 // Mock FileReader
 const mockFileReader = {
@@ -17,8 +18,9 @@ global.FileReader = vi.fn(() => mockFileReader) as unknown as typeof FileReader;
 global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
 global.URL.revokeObjectURL = vi.fn();
 
-// Mock alert
-global.alert = vi.fn();
+// Mock toast
+const mockToast = vi.fn();
+vi.spyOn(useToastModule, "toast").mockImplementation(mockToast);
 
 describe("Import Functionality", () => {
   beforeEach(() => {
@@ -88,8 +90,13 @@ describe("Import Functionality", () => {
       mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
     });
 
-    // Check that alert was called with success message
-    expect(global.alert).toHaveBeenCalledWith('Tree imported successfully!');
+    // Check that toast was called with success message
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Import successful",
+        variant: "success",
+      })
+    );
   });
 
   it("should show error for invalid JSON", async () => {
@@ -107,8 +114,13 @@ describe("Import Functionality", () => {
       mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
     });
 
-    // Check that alert was called with error message
-    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining('Failed to parse JSON file'));
+    // Check that toast was called with error message
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Import failed",
+        variant: "destructive",
+      })
+    );
   });
 
   it("should validate data structure", async () => {
@@ -133,7 +145,12 @@ describe("Import Functionality", () => {
       mockFileReader.onload?.({ target: mockFileReader } as unknown as ProgressEvent<FileReader>);
     });
 
-    // Check that alert was called with validation errors
-    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining('Import failed'));
+    // Check that toast was called with validation errors
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Import failed",
+        variant: "destructive",
+      })
+    );
   });
 });

@@ -3,6 +3,7 @@ import type { ImpactTree, Node, Relationship, Measurement } from "@/types";
 import { exportAsJSON, exportAsPNG, exportAsHTML } from "@/lib/export-utils";
 import { validateImportedData } from "@/lib/validation-utils";
 import { sampleData } from "@/data/sampleData";
+import { toast } from "@/hooks/use-toast";
 
 export interface ViewBox {
   x: number;
@@ -152,7 +153,11 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
       measurements: Array.from(measurements.values()),
     };
     localStorage.setItem("impactTreeData", JSON.stringify(data));
-    alert("Tree saved!");
+    toast({
+      title: "Tree saved",
+      description: "Your impact tree has been saved to browser storage.",
+      variant: "success",
+    });
   }, [tree, nodes, relationships, measurements]);
 
   /**
@@ -171,7 +176,11 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
         await exportAsPNG(tree, canvasElement);
       } catch (error) {
         console.error("PNG export failed:", error);
-        alert("Failed to export as PNG. Please try again.");
+        toast({
+          title: "Export failed",
+          description: "Failed to export as PNG. Please try again.",
+          variant: "destructive",
+        });
       }
     },
     [tree]
@@ -200,7 +209,11 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
       if (!file) return;
 
       if (file.type !== "application/json" && !file.name.endsWith(".json")) {
-        alert("Please select a valid JSON file");
+        toast({
+          title: "Invalid file type",
+          description: "Please select a valid JSON file.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -212,7 +225,11 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
 
           const validation = validateImportedData(data);
           if (!validation.isValid) {
-            alert(`Import failed:\n${validation.errors.join("\n")}`);
+            toast({
+              title: "Import failed",
+              description: validation.errors.join(". "),
+              variant: "destructive",
+            });
             return;
           }
 
@@ -222,16 +239,26 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
           setMeasurements(new Map(data.measurements.map((m: Measurement) => [m.id, m])));
           resetState();
 
-          alert("Tree imported successfully!");
+          toast({
+            title: "Import successful",
+            description: "Your impact tree has been loaded.",
+            variant: "success",
+          });
         } catch (error) {
-          alert(
-            `Failed to parse JSON file: ${error instanceof Error ? error.message : "Unknown error"}`
-          );
+          toast({
+            title: "Import failed",
+            description: `Failed to parse JSON file: ${error instanceof Error ? error.message : "Unknown error"}`,
+            variant: "destructive",
+          });
         }
       };
 
       reader.onerror = () => {
-        alert("Failed to read the file");
+        toast({
+          title: "File read error",
+          description: "Failed to read the file. Please try again.",
+          variant: "destructive",
+        });
       };
 
       reader.readAsText(file);

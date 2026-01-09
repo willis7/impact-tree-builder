@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ImpactTreeApp } from "../ImpactTreeApp";
 import "@testing-library/jest-dom/vitest";
+import * as useToastModule from "@/hooks/use-toast";
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -22,8 +23,12 @@ Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
 });
 
-// Mock window.alert
+// Mock window.alert (kept for other tests that may use it)
 global.alert = vi.fn();
+
+// Mock toast
+const mockToast = vi.fn();
+vi.spyOn(useToastModule, "toast").mockImplementation(mockToast);
 
 // Mock URL.createObjectURL and revokeObjectURL
 global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
@@ -217,8 +222,13 @@ describe("ImpactTreeApp", () => {
       expect(parsed).toHaveProperty("relationships");
       expect(parsed).toHaveProperty("measurements");
 
-      // Verify alert was shown
-      expect(global.alert).toHaveBeenCalledWith("Tree saved!");
+      // Verify toast was shown
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Tree saved",
+          variant: "success",
+        })
+      );
     });
 
     it("saves current tree state including edits", async () => {
