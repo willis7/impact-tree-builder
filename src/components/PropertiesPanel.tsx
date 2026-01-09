@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Node, Relationship, Measurement } from "@/types";
+import type { Node, Relationship, Measurement, MeasurementPeriod } from "@/types";
 import { Trash2, Edit, Plus } from "lucide-react";
 import {
   sanitizeNodeName,
@@ -30,6 +30,7 @@ import {
   sanitizeMeasurementText,
   sanitizeNumericInput,
 } from "@/lib/sanitize";
+import { getNodeTypeLabel } from "@/lib/node-utils";
 
 /**
  * Props for the PropertiesPanel component
@@ -67,7 +68,7 @@ interface PropertiesPanelProps {
  * @param props - Component props
  * @returns The properties panel UI element
  */
-export function PropertiesPanel({
+export const PropertiesPanel = memo(function PropertiesPanel({
   selectedNode,
   selectedRelationship,
   measurements,
@@ -84,7 +85,7 @@ export function PropertiesPanel({
     expected_value: 0,
     actual_value: 0,
     impact_type: "proximate" as "proximate" | "downstream",
-    measurement_period: "monthly",
+    measurement_period: "monthly" as MeasurementPeriod,
   });
 
   // Memoize filtered measurements to avoid recalculating on every render
@@ -94,24 +95,6 @@ export function PropertiesPanel({
       (m) => m.node_id === selectedNode.id
     );
   }, [selectedNode, measurements]);
-
-  /**
-   * Converts node type identifier to human-readable label
-   * @param type - Node type identifier (business_metric, product_metric, initiative)
-   * @returns Human-readable label
-   */
-  const getNodeTypeLabel = (type: string) => {
-    switch (type) {
-      case "business_metric":
-        return "Business Metric";
-      case "product_metric":
-        return "Product Metric";
-      case "initiative":
-        return "Initiative";
-      default:
-        return type;
-    }
-  };
 
   /**
    * Calculates measurement performance as ratio of actual to expected value
@@ -433,7 +416,7 @@ export function PropertiesPanel({
                     onValueChange={(value) =>
                       setNewMeasurement({
                         ...newMeasurement,
-                        measurement_period: value,
+                        measurement_period: value as MeasurementPeriod,
                       })
                     }
                   >
@@ -504,4 +487,4 @@ export function PropertiesPanel({
       </div>
     </aside>
   );
-}
+});

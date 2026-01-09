@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MutableRefObject } from "react";
+import { useEffect, useRef, useMemo, type MutableRefObject } from "react";
 
 /**
  * Configuration for auto-pan behavior
@@ -76,7 +76,13 @@ export function useCanvasAutoPan({
   config?: Partial<AutoPanConfig>;
 }) {
   const animationFrameRef = useRef<number | null>(null);
-  const fullConfig = { ...DEFAULT_CONFIG, ...config, enabled: isDragging };
+
+  // Memoize config to prevent unnecessary effect re-runs
+  const fullConfig = useMemo(() => ({
+    ...DEFAULT_CONFIG,
+    ...config,
+    enabled: isDragging,
+  }), [config, isDragging]);
 
   useEffect(() => {
     // Only run auto-pan when dragging is active

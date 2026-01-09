@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import type { Node, Relationship, Measurement } from "@/types";
+import type { NodeType } from "@/types/drag";
 
 export interface NodeOperationsState {
   nodes: Map<string, Node>;
@@ -7,7 +8,7 @@ export interface NodeOperationsState {
   measurements: Map<string, Measurement>;
   selectedNodeId: string | null;
   mode: "select" | "add-node" | "connect";
-  selectedNodeType: string | null;
+  selectedNodeType: NodeType | null;
   connectSourceNodeId: string | null;
 }
 
@@ -17,7 +18,7 @@ export interface NodeOperationsActions {
   setMeasurements: React.Dispatch<React.SetStateAction<Map<string, Measurement>>>;
   setSelectedNodeId: React.Dispatch<React.SetStateAction<string | null>>;
   setMode: React.Dispatch<React.SetStateAction<"select" | "add-node" | "connect">>;
-  setSelectedNodeType: React.Dispatch<React.SetStateAction<string | null>>;
+  setSelectedNodeType: React.Dispatch<React.SetStateAction<NodeType | null>>;
   setConnectSourceNodeId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 

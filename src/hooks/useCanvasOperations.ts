@@ -1,12 +1,7 @@
-import type { Node } from "@/types";
+import type { Node, ViewBox } from "@/types";
 
-export interface ViewBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  scale: number;
-}
+// Re-export ViewBox for backwards compatibility
+export type { ViewBox } from "@/types";
 
 export interface UseCanvasOperationsState {
   viewBox: ViewBox;

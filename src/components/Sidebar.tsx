@@ -31,10 +31,10 @@ interface SidebarProps {
   mode: "select" | "add-node" | "connect";
   /** Callback to change the interaction mode */
   onModeChange: (mode: "select" | "add-node" | "connect") => void;
-  /** Currently selected node type for adding (business_metric, product_metric, initiative) */
-  selectedNodeType: string | null;
+  /** Currently selected node type for adding */
+  selectedNodeType: NodeType | null;
   /** Callback when a node type is selected */
-  onNodeTypeSelect: (type: string) => void;
+  onNodeTypeSelect: (type: NodeType) => void;
   /** Map of all nodes in the tree by ID */
   nodes: Map<string, Node>;
   /** Map of all relationships in the tree by ID */
@@ -145,9 +145,9 @@ export function Sidebar({
    * Handles node type button clicks
    * Activates add-node mode with the selected type
    * Memoized with useCallback to prevent child re-renders
-   * @param type - The node type identifier (business_metric, product_metric, initiative)
+   * @param type - The node type identifier
    */
-  const handleNodeTypeClick = useCallback((type: string) => {
+  const handleNodeTypeClick = useCallback((type: NodeType) => {
     onNodeTypeSelect(type);
     onModeChange("add-node");
   }, [onNodeTypeSelect, onModeChange]);

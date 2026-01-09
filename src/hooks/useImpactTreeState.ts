@@ -1,17 +1,13 @@
 import { useState, useRef, useCallback } from "react";
-import type { ImpactTree, Node, Relationship, Measurement } from "@/types";
+import type { ImpactTree, Node, Relationship, Measurement, ViewBox } from "@/types";
+import type { NodeType } from "@/types/drag";
 import { exportAsJSON, exportAsPNG, exportAsHTML } from "@/lib/export-utils";
 import { validateImportedData } from "@/lib/validation-utils";
 import { sampleData } from "@/data/sampleData";
 import { toast } from "@/hooks/use-toast";
 
-export interface ViewBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  scale: number;
-}
+// Re-export ViewBox for backwards compatibility
+export type { ViewBox } from "@/types";
 
 export interface ImpactTreeState {
   tree: ImpactTree;
@@ -21,7 +17,7 @@ export interface ImpactTreeState {
   selectedNodeId: string | null;
   selectedRelationshipId: string | null;
   mode: "select" | "add-node" | "connect";
-  selectedNodeType: string | null;
+  selectedNodeType: NodeType | null;
   connectSourceNodeId: string | null;
   viewBox: ViewBox;
 }
@@ -34,7 +30,7 @@ export interface ImpactTreeActions {
   setSelectedNodeId: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedRelationshipId: React.Dispatch<React.SetStateAction<string | null>>;
   setMode: React.Dispatch<React.SetStateAction<"select" | "add-node" | "connect">>;
-  setSelectedNodeType: React.Dispatch<React.SetStateAction<string | null>>;
+  setSelectedNodeType: React.Dispatch<React.SetStateAction<NodeType | null>>;
   setConnectSourceNodeId: React.Dispatch<React.SetStateAction<string | null>>;
   setViewBox: React.Dispatch<React.SetStateAction<ViewBox>>;
 }
@@ -110,7 +106,7 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
 
   // Mode state
   const [mode, setMode] = useState<"select" | "add-node" | "connect">("select");
-  const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
+  const [selectedNodeType, setSelectedNodeType] = useState<NodeType | null>(null);
   const [connectSourceNodeId, setConnectSourceNodeId] = useState<string | null>(null);
 
   // View state

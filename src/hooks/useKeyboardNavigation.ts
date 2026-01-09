@@ -1,4 +1,5 @@
 import React from "react";
+import type { NodeType } from "@/types/drag";
 
 export interface UseKeyboardNavigationState {
   mode: "select" | "add-node" | "connect";
@@ -8,7 +9,7 @@ export interface UseKeyboardNavigationState {
 export interface UseKeyboardNavigationActions {
   cancelDrag: () => void;
   setMode: React.Dispatch<React.SetStateAction<"select" | "add-node" | "connect">>;
-  setSelectedNodeType: React.Dispatch<React.SetStateAction<string | null>>;
+  setSelectedNodeType: React.Dispatch<React.SetStateAction<NodeType | null>>;
   setConnectSourceNodeId: React.Dispatch<React.SetStateAction<string | null>>;
   setHelpDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }

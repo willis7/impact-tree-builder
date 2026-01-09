@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useNodeOperations, getRelationshipTypeAndColor } from "../useNodeOperations";
 import type { Node, Relationship, Measurement } from "@/types";
+import type { NodeType } from "@/types/drag";
 
 describe("useNodeOperations", () => {
   let mockState: {
@@ -10,7 +11,7 @@ describe("useNodeOperations", () => {
     measurements: Map<string, Measurement>;
     selectedNodeId: string | null;
     mode: "select" | "add-node" | "connect";
-    selectedNodeType: string | null;
+    selectedNodeType: NodeType | null;
     connectSourceNodeId: string | null;
   };
   let mockActions: {

@@ -28,6 +28,9 @@ export interface Relationship {
   strength: number;
 }
 
+/** Valid measurement period values */
+export type MeasurementPeriod = "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+
 export interface Measurement {
   id: string;
   node_id: string;
@@ -35,8 +38,17 @@ export interface Measurement {
   expected_value: number;
   actual_value: number;
   measurement_date: string;
-  measurement_period?: string;
+  measurement_period?: MeasurementPeriod;
   impact_type: "proximate" | "downstream";
+}
+
+/** Canvas viewport state */
+export interface ViewBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  scale: number;
 }
 
 export interface TreeData {
