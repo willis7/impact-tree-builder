@@ -290,29 +290,9 @@ export function Sidebar({
                 </Badge>
               )}
             </Button>
-            <div className="mt-3 space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="relationshipType"
-                  value="desirable_effect"
-                  defaultChecked
-                />
-                <label>Desirable Effect</label>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="relationshipType"
-                  value="undesirable_effect"
-                />
-                <label>Undesirable Effect</label>
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="radio" name="relationshipType" value="rollup" />
-                <label>Rollup</label>
-              </div>
-            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Click two nodes to connect them. Relationship type is determined automatically based on node types.
+            </p>
           </div>
 
           <Separator />

@@ -1,6 +1,7 @@
 import { useRef, useState, useMemo, useCallback, memo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import type { Node, Relationship, Measurement } from "@/types";
+import { screenToCanvasCoordinates } from "@/lib/drag-utils";
 
 interface ImpactCanvasProps {
   nodes: Map<string, Node>;
@@ -100,40 +101,12 @@ export const ImpactCanvas = memo(function ImpactCanvas({
       return;
     }
 
-    // Try using SVG's native coordinate transformation
-    let x, y;
-
-    if (svgRef.current instanceof SVGSVGElement) {
-      try {
-        const pt = svgRef.current.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        const ctm = svgRef.current.getScreenCTM();
-        if (ctm) {
-          const svgPoint = pt.matrixTransform(ctm.inverse());
-          x = svgPoint.x;
-          y = svgPoint.y;
-        }
-      } catch {
-        // SVG native transform failed, will use fallback
-      }
-    }
-
-    // Fallback to manual calculation
-    if (x === undefined || y === undefined) {
-      const rect = svgRef.current.getBoundingClientRect();
-
-      // The actual viewBox dimensions on the SVG (scaled)
-      const actualViewBoxWidth = viewBox.width / viewBox.scale;
-      const actualViewBoxHeight = viewBox.height / viewBox.scale;
-
-      // Transform: screen -> normalized (0-1) -> viewBox coordinates
-      const normalizedX = (e.clientX - rect.left) / rect.width;
-      const normalizedY = (e.clientY - rect.top) / rect.height;
-
-      x = viewBox.x + normalizedX * actualViewBoxWidth;
-      y = viewBox.y + normalizedY * actualViewBoxHeight;
-    }
+    // Transform screen coordinates to canvas coordinates
+    const { x, y } = screenToCanvasCoordinates(
+      { x: e.clientX, y: e.clientY },
+      svgRef.current,
+      viewBox
+    );
 
     const target = e.target as SVGElement;
     const nodeElement = target.closest("[data-node-id]");

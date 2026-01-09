@@ -1,6 +1,7 @@
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
 import type { DragState as ActualDragState, NodeType } from "@/types/drag";
 import type { ViewBox } from "./useCanvasOperations";
+import { screenToCanvasCoordinates } from "@/lib/drag-utils";
 
 export interface UseDragOperationsState {
   viewBox: ViewBox;
@@ -85,41 +86,12 @@ export function useDragOperations(
         screenY = (activatorEvent.clientY as number) + delta.y;
       }
 
-      // Convert screen coordinates to canvas coordinates
-      // Try using SVG's native coordinate transformation first
-      let canvasX, canvasY;
-
-      if (canvasElement instanceof SVGSVGElement) {
-        try {
-          const pt = canvasElement.createSVGPoint();
-          pt.x = screenX;
-          pt.y = screenY;
-          const ctm = canvasElement.getScreenCTM();
-          if (ctm) {
-            const svgPoint = pt.matrixTransform(ctm.inverse());
-            canvasX = svgPoint.x;
-            canvasY = svgPoint.y;
-          }
-        } catch {
-          // SVG native transform failed, will use fallback
-        }
-      }
-
-      // Fallback to manual calculation if native transform failed
-      if (canvasX === undefined || canvasY === undefined) {
-        const rect = canvasElement.getBoundingClientRect();
-
-        // The actual viewBox dimensions on the SVG (scaled)
-        const actualViewBoxWidth = state.viewBox.width / state.viewBox.scale;
-        const actualViewBoxHeight = state.viewBox.height / state.viewBox.scale;
-
-        // Transform: screen -> normalized (0-1) -> viewBox coordinates
-        const normalizedX = (screenX - rect.left) / rect.width;
-        const normalizedY = (screenY - rect.top) / rect.height;
-
-        canvasX = state.viewBox.x + normalizedX * actualViewBoxWidth;
-        canvasY = state.viewBox.y + normalizedY * actualViewBoxHeight;
-      }
+      // Convert screen coordinates to canvas coordinates using shared utility
+      const { x: canvasX, y: canvasY } = screenToCanvasCoordinates(
+        { x: screenX, y: screenY },
+        canvasElement,
+        state.viewBox
+      );
 
       actions.endDrag({ x: canvasX, y: canvasY });
       // Set timestamp to prevent click events immediately after drag

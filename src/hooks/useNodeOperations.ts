@@ -128,8 +128,6 @@ export function useNodeOperations(
       shape,
     };
 
-    console.log("Creating node at:", { x, y, nodeId });
-
     actions.setNodes(new Map(state.nodes.set(nodeId, newNode)));
     actions.setSelectedNodeId(nodeId);
     actions.setMode("select");

@@ -12,9 +12,12 @@ import type { Position, DragValidationResult } from "../types/drag";
  * Converts mouse/pointer coordinates to SVG canvas coordinates,
  * accounting for zoom level and pan offset.
  *
+ * Uses SVG's native coordinate transformation when available,
+ * with a manual calculation fallback for robustness.
+ *
  * @param screenPosition - Position in screen/viewport coordinates
  * @param canvasElement - SVG canvas element
- * @param viewBox - Current viewBox values [x, y, width, height]
+ * @param viewBox - Current viewBox values [x, y, width, height, scale]
  * @returns Position in canvas coordinates
  */
 export function screenToCanvasCoordinates(
@@ -28,14 +31,35 @@ export function screenToCanvasCoordinates(
     scale?: number;
   }
 ): Position {
+  // Try SVG's native coordinate transformation first (most accurate)
+  try {
+    const pt = canvasElement.createSVGPoint();
+    pt.x = screenPosition.x;
+    pt.y = screenPosition.y;
+    const ctm = canvasElement.getScreenCTM();
+    if (ctm) {
+      const svgPoint = pt.matrixTransform(ctm.inverse());
+      return { x: svgPoint.x, y: svgPoint.y };
+    }
+  } catch {
+    // SVG native transform failed, use fallback
+  }
+
+  // Fallback to manual calculation
   const rect = canvasElement.getBoundingClientRect();
   const scale = viewBox.scale || 1;
-  const scaleX = viewBox.width / scale / rect.width;
-  const scaleY = viewBox.height / scale / rect.height;
+
+  // The actual viewBox dimensions on the SVG (scaled)
+  const actualViewBoxWidth = viewBox.width / scale;
+  const actualViewBoxHeight = viewBox.height / scale;
+
+  // Transform: screen -> normalized (0-1) -> viewBox coordinates
+  const normalizedX = (screenPosition.x - rect.left) / rect.width;
+  const normalizedY = (screenPosition.y - rect.top) / rect.height;
 
   return {
-    x: viewBox.x + (screenPosition.x - rect.left) * scaleX,
-    y: viewBox.y + (screenPosition.y - rect.top) * scaleY,
+    x: viewBox.x + normalizedX * actualViewBoxWidth,
+    y: viewBox.y + normalizedY * actualViewBoxHeight,
   };
 }
 
