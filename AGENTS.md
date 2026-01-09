@@ -3,18 +3,18 @@
 ## Build/Lint/Test Commands
 
 ### Build
-- `npm run build` - Type-check and build for production
-- `npm run dev` - Start development server
+- `bun run build` - Type-check and build for production
+- `bun run dev` - Start development server
 
 ### Lint
-- `npm run lint` - Run ESLint on all files
+- `bun run lint` - Run ESLint on all files
 
 ### Test
-- `npm run test` - Run all tests in watch mode
-- `npm run test:run` - Run all tests once
-- `npm run test:ui` - Run tests with UI
-- `npm run test:coverage` - Run tests with coverage report
-- `vitest run --reporter=verbose path/to/test/file.test.tsx` - Run single test file
+- `bun run test` - Run all tests in watch mode
+- `bun run test:run` - Run all tests once
+- `bun run test:ui` - Run tests with UI
+- `bun run test:coverage` - Run tests with coverage report
+- `bun run vitest run --reporter=verbose path/to/test/file.test.tsx` - Run single test file
 
 ## Code Style Guidelines
 

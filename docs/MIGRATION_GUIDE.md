@@ -235,7 +235,7 @@ You can keep both versions in the same project:
 - Uses `app.js` and `style.css`
 
 **Modern Version:**
-- Run `npm run dev`
+- Run `bun run dev`
 - Uses React components and Vite
 
 ## Conclusion

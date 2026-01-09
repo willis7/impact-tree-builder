@@ -32,18 +32,18 @@ Your Impact Tree Builder application has been successfully modernized with cutti
 ### Quick Start
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Start development server
-npm run dev
+bun run dev
 
 # Open http://localhost:5173 in your browser
 ```
 
 ### Build for Production
 ```bash
-npm run build
-npm run preview
+bun run build
+bun run preview
 ```
 
 ## 📂 What's Included
@@ -112,7 +112,7 @@ open index.html
 ### Modern Version
 ```bash
 # Run the development server
-npm run dev
+bun run dev
 ```
 
 Both versions work independently and can coexist!
@@ -159,10 +159,10 @@ If you want to understand the changes:
 If port 5173 is taken, Vite will automatically use 5174 or the next available port.
 
 ### Type Errors
-Run `npm run build` to see all TypeScript errors at once.
+Run `bun run build` to see all TypeScript errors at once.
 
 ### Missing Dependencies
-Run `npm install` to ensure all packages are installed.
+Run `bun install` to ensure all packages are installed.
 
 ## 🎯 Next Steps
 

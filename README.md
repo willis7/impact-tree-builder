@@ -42,22 +42,22 @@ A modern, fully-featured impact tree visualization tool built with React, TypeSc
 ### Prerequisites
 
 - Node.js 18+
-- npm or yarn
+- [Bun](https://bun.sh/) (recommended) or npm
 
 ### Installation
 
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Start development server
-npm run dev
+bun run dev
 
 # Build for production
-npm run build
+bun run build
 
 # Preview production build
-npm run preview
+bun run preview
 ```
 
 The app will be available at `http://localhost:5173/`
@@ -70,16 +70,16 @@ This project follows **Test-Driven Development (TDD)** principles as outlined in
 
 ```bash
 # Run tests in watch mode (for development)
-npm test
+bun run test
 
 # Run tests once (for CI/CD)
-npm run test:run
+bun run test:run
 
 # Run tests with coverage report
-npm run test:coverage
+bun run test:coverage
 
 # Open Vitest UI (interactive test runner)
-npm run test:ui
+bun run test:ui
 ```
 
 ## 📁 Project Structure
@@ -195,7 +195,7 @@ src/
 ## 📦 Building for Production
 
 ```bash
-npm run build
+bun run build
 ```
 
 The optimized build will be in the `dist/` folder, ready to deploy to any static hosting service.

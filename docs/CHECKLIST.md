@@ -159,17 +159,17 @@ Your Impact Tree Builder has been successfully modernized!
 
 **Start the app:**
 ```bash
-npm run dev
+bun run dev
 ```
 
 **Build for production:**
 ```bash
-npm run build
+bun run build
 ```
 
 **Preview production build:**
 ```bash
-npm run preview
+bun run preview
 ```
 
 Enjoy your modern, type-safe, beautiful Impact Tree Builder! 🌳✨
