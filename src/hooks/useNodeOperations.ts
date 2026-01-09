@@ -265,24 +265,26 @@ export function getRelationshipTypeAndColor(sourceNode: Node): {
   relationshipType: Relationship["relationship_type"];
   color: string;
 } {
-  const sourceColor = sourceNode.color;
-
   let relationshipType: Relationship["relationship_type"];
   let color: string;
 
-  // Determine relationship type based on source node level
-  switch (sourceNode.level) {
-    case 1: // Business metrics drive product metrics
+  // Determine relationship type based on source node type
+  switch (sourceNode.node_type) {
+    case "business_metric":
       relationshipType = "desirable_effect";
       color = "#4CAF50"; // Green for positive effect
       break;
-    case 2: // Product metrics drive initiatives
+    case "product_metric":
       relationshipType = "desirable_effect";
       color = "#2196F3"; // Blue for product to initiative
       break;
-    case 3: // Initiatives can have both effects
-      relationshipType = "rollup";
-      color = sourceColor; // Use source node color
+    case "initiative_positive":
+      relationshipType = "desirable_effect";
+      color = "#8B5CF6"; // Purple for positive initiative
+      break;
+    case "initiative_negative":
+      relationshipType = "undesirable_effect";
+      color = "#EF4444"; // Red for negative initiative
       break;
     default:
       relationshipType = "desirable_effect";
