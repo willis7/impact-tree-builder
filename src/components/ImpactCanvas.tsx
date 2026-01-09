@@ -631,7 +631,7 @@ export const ImpactCanvas = memo(function ImpactCanvas({
                   strokeOpacity={isSelected ? 1 : 0.6}
                   fill="none"
                   markerEnd={markerEnd}
-                  className="cursor-pointer transition-all duration-200"
+                  className="cursor-pointer"
                 />
               </g>
             );
