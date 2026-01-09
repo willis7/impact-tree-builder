@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm outdated:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(npm install:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(bd create:*)",
+      "Bash(bd list:*)",
+      "Bash(bd sync:*)",
+      "Bash(bd dep add:*)",
+      "Bash(bd show:*)",
+      "Bash(bd stats:*)"
+    ]
+  }
+}
