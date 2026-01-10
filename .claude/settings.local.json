@@ -28,7 +28,14 @@
       "Bash(git fetch:*)",
       "Bash(bun run lint)",
       "Bash(bun run test:run:*)",
-      "Bash(bun run build:*)"
+      "Bash(bun run build:*)",
+      "Bash(for type in \"EdgeProximity\" \"PanVelocity\" \"AutoPanState\" \"KeyboardState\" \"UseDragRelationshipReturn\" \"UseCanvasAutoPanReturn\" \"DragValidationResult\" \"DragPreviewProps\" \"RelationshipPreviewProps\" \"KeyboardAction\" \"INITIAL_AUTO_PAN_STATE\" \"INITIAL_KEYBOARD_STATE\" \"DRAG_CONSTANTS\" \"DragType\")",
+      "Bash(do echo \"=== $type ===\")",
+      "Bash(done)",
+      "Bash(find:*)",
+      "Bash(bun add:*)",
+      "Bash(bun run vitest run:*)",
+      "Bash(grep:*)"
     ]
   }
 }
