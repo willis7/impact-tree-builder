@@ -149,7 +149,7 @@ export function validateImportedData(data: unknown): ValidationResult {
           errors.push(`Node ${index} missing required field: ${field}`);
         }
       });
-      if (nodeObj.node_type && typeof nodeObj.node_type === 'string' && !['business_metric', 'product_metric', 'initiative'].includes(nodeObj.node_type)) {
+      if (nodeObj.node_type && typeof nodeObj.node_type === 'string' && !['business_metric', 'product_metric', 'initiative', 'initiative_positive', 'initiative_negative'].includes(nodeObj.node_type)) {
         errors.push(`Node ${index} has invalid node_type: ${nodeObj.node_type}`);
       }
       if (nodeObj.shape && typeof nodeObj.shape === 'string' && !['rectangle', 'ellipse'].includes(nodeObj.shape)) {

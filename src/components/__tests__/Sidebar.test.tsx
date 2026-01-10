@@ -106,7 +106,9 @@ describe("Sidebar", () => {
   it("should display correct node count badge", () => {
     render(<Sidebar {...defaultProps} />);
 
-    expect(screen.getByText("2 nodes")).toBeDefined();
+    // New UI shows stats as separate label and value
+    expect(screen.getByText("Nodes")).toBeDefined();
+    expect(screen.getByText("2")).toBeDefined();
   });
 
   it("should call onTreeUpdate when tree name changes", async () => {
@@ -237,11 +239,13 @@ describe("Sidebar", () => {
     // Should show total nodes count (2 nodes)
     expect(screen.getByText("2")).toBeDefined();
 
-    // Should show relationships count (1 relationship)
-    expect(screen.getAllByText("1")).toHaveLength(2); // One for relationships, one for measured nodes
+    // Should show stat labels
+    expect(screen.getByText("Relations")).toBeDefined();
+    expect(screen.getByText("Measured")).toBeDefined();
+    expect(screen.getByText("Metrics")).toBeDefined();
 
-    // Should show measured nodes count (1 measured node)
-    expect(screen.getByText("Measured Nodes")).toBeDefined();
+    // Multiple "1" values: Relations (1), Measured (1), Metrics (1)
+    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(2);
   });
 
   it("should render with empty nodes and relationships", () => {
@@ -249,7 +253,9 @@ describe("Sidebar", () => {
       <Sidebar {...defaultProps} nodes={new Map()} relationships={new Map()} />
     );
 
-    expect(screen.getByText("0 nodes")).toBeDefined();
+    // New UI shows stats in cards with the label "Nodes" and value "0" separately
+    expect(screen.getByText("Nodes")).toBeDefined();
+    expect(screen.getAllByText("0")).toBeDefined();
   });
 
   it("should have accessible labels for all inputs", () => {

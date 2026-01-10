@@ -182,21 +182,15 @@ describe("ImpactTreeApp", () => {
       }
     });
 
-    it("has center view button", async () => {
+    it("has fit to screen button", async () => {
       const user = userEvent.setup();
       render(<ImpactTreeApp />);
 
-      const buttons = screen.getAllByRole("button");
-      const centerButton = buttons.find((button) => {
-        const svg = button.querySelector("svg");
-        return svg?.classList.contains("lucide-move");
-      });
-
-      expect(centerButton).toBeTruthy();
-      if (centerButton) {
-        await user.click(centerButton);
-        expect(centerButton).toBeEnabled();
-      }
+      // The FloatingToolbar uses Focus icon with aria-label "Fit to screen"
+      const fitButton = screen.getByRole("button", { name: /fit to screen/i });
+      expect(fitButton).toBeTruthy();
+      await user.click(fitButton);
+      expect(fitButton).toBeEnabled();
     });
   });
 
@@ -423,7 +417,7 @@ describe("ImpactTreeApp", () => {
       render(<ImpactTreeApp />);
 
       // Sidebar should contain tree info section
-      expect(screen.getByText(/tree information/i)).toBeInTheDocument();
+      expect(screen.getByText(/tree info/i)).toBeInTheDocument();
     });
 
     it("renders ImpactCanvas component", () => {
@@ -663,14 +657,14 @@ describe("ImpactTreeApp", () => {
       // Verify reset view functionality
     });
 
-    it("handles center view functionality", async () => {
+    it("handles fit to screen functionality", async () => {
       const user = userEvent.setup();
       render(<ImpactTreeApp />);
 
-      const centerViewBtn = screen.getByRole("button", { name: /center view/i });
+      const centerViewBtn = screen.getByRole("button", { name: /fit to screen/i });
       await user.click(centerViewBtn);
 
-      // Verify center view functionality
+      // Verify fit to screen functionality
     });
   });
 
@@ -763,7 +757,7 @@ describe("ImpactTreeApp", () => {
       expect(screen.getByRole("button", { name: /zoom in/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /zoom out/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /reset view/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /center view/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /fit to screen/i })).toBeInTheDocument();
     });
 
     it("maintains proper heading hierarchy", () => {

@@ -106,7 +106,7 @@ describe("useNodeOperations", () => {
       const newNodesMap = mockActions.setNodes.mock.calls[0][0] as Map<string, Node>;
       const node = Array.from(newNodesMap.values())[0] as Node;
 
-      expect(node.node_type).toBe("initiative");
+      expect(node.node_type).toBe("initiative_positive");
       expect(node.level).toBe(3);
       expect(node.color).toBe("#FF6F00");
       expect(node.shape).toBe("ellipse");
@@ -125,7 +125,7 @@ describe("useNodeOperations", () => {
       const newNodesMap = mockActions.setNodes.mock.calls[0][0] as Map<string, Node>;
       const node = Array.from(newNodesMap.values())[0] as Node;
 
-      expect(node.node_type).toBe("initiative");
+      expect(node.node_type).toBe("initiative_negative");
       expect(node.level).toBe(3);
       expect(node.color).toBe("#D32F2F");
       expect(node.shape).toBe("ellipse");
@@ -578,12 +578,12 @@ describe("useNodeOperations", () => {
       expect(result.color).toBe("#2196F3");
     });
 
-    it("returns correct properties for initiative (level 3)", () => {
+    it("returns desirable_effect for positive initiative", () => {
       const node: Node = {
         id: "node1",
-        name: "Initiative",
+        name: "Positive Initiative",
         description: "Description",
-        node_type: "initiative",
+        node_type: "initiative_positive",
         level: 3,
         position_x: 100,
         position_y: 200,
@@ -592,16 +592,34 @@ describe("useNodeOperations", () => {
       };
 
       const result = getRelationshipTypeAndColor(node);
-      expect(result.relationshipType).toBe("rollup");
-      expect(result.color).toBe("#FF6F00"); // Uses source node color
+      expect(result.relationshipType).toBe("desirable_effect");
+      expect(result.color).toBe("#8B5CF6"); // Purple for positive initiative
     });
 
-    it("returns fallback properties for unknown level", () => {
+    it("returns undesirable_effect for negative initiative", () => {
+      const node: Node = {
+        id: "node1",
+        name: "Negative Initiative",
+        description: "Description",
+        node_type: "initiative_negative",
+        level: 3,
+        position_x: 100,
+        position_y: 200,
+        color: "#D32F2F",
+        shape: "ellipse",
+      };
+
+      const result = getRelationshipTypeAndColor(node);
+      expect(result.relationshipType).toBe("undesirable_effect");
+      expect(result.color).toBe("#EF4444"); // Red for negative initiative
+    });
+
+    it("returns fallback properties for unknown node type", () => {
       const node: Node = {
         id: "node1",
         name: "Unknown",
         description: "Description",
-        node_type: "business_metric",
+        node_type: "unknown_type" as Node["node_type"],
         level: 99,
         position_x: 100,
         position_y: 200,
