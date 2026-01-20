@@ -9,7 +9,7 @@ export default defineConfig({
     environment: "happy-dom",
     setupFiles: [path.resolve(__dirname, "./src/test/setup.ts")],
     css: true,
-    exclude: ["node_modules", "dist", "e2e"],
+    exclude: ["node_modules", "dist", "e2e", ".opencode", ".beads"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html", "lcov"],
