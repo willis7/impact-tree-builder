@@ -11,6 +11,12 @@ export interface Node {
   id: string;
   name: string;
   description: string;
+  /**
+   * Node type identifier.
+   * - "initiative" is the stored value for all initiative nodes
+   * - "initiative_positive" and "initiative_negative" are display variants used in UI
+   * All three values are supported for backward compatibility and UI flexibility
+   */
   node_type: "business_metric" | "product_metric" | "initiative" | "initiative_positive" | "initiative_negative";
   level: number;
   position_x: number;
