@@ -89,7 +89,7 @@ interface SortableMeasurementItemProps {
   onDelete?: (measurementId: string) => void;
 }
 
-function SortableMeasurementItem({ measurement, index, performance, onDelete }: SortableMeasurementItemProps) {
+function SortableMeasurementItem({ measurement, index, performance, onDelete }: SortableMeasurementItemProps): React.JSX.Element {
   const {
     attributes,
     listeners,
@@ -189,7 +189,7 @@ function SortableMeasurementItem({ measurement, index, performance, onDelete }: 
 /**
  * Icon component for node types
  */
-function NodeTypeIcon({ nodeType }: { nodeType: string }) {
+function NodeTypeIcon({ nodeType }: { nodeType: string }): React.JSX.Element {
   const iconClass = "h-4 w-4";
   switch (nodeType) {
     case "business_metric":
