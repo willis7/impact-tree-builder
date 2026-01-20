@@ -401,10 +401,20 @@ export const ImpactCanvas = memo(function ImpactCanvas({
         return;
       }
 
+      // Filter out measurements with zero expected_value to avoid division by zero
+      const validMeasurements = nodeMeasurements.filter(
+        (meas) => meas.expected_value !== 0
+      );
+
+      if (validMeasurements.length === 0) {
+        performanceMap.set(nodeId, null);
+        return;
+      }
+
       const avgPerformance =
-        nodeMeasurements.reduce((sum, meas) => {
+        validMeasurements.reduce((sum, meas) => {
           return sum + Math.abs(meas.actual_value / meas.expected_value);
-        }, 0) / nodeMeasurements.length;
+        }, 0) / validMeasurements.length;
 
       performanceMap.set(nodeId, avgPerformance >= 0.8);
     });

@@ -405,4 +405,107 @@ describe("PropertiesPanel", () => {
       expect(call.expected_value).toBe(0);
     });
   });
+
+  describe("Division by Zero Handling", () => {
+    it("should render without crashing when measurement has zero expected_value", () => {
+      const measurementWithZero: Measurement = {
+        id: "meas-zero",
+        node_id: "node-1",
+        metric_name: "Zero Expected",
+        expected_value: 0, // Division by zero case
+        actual_value: 100,
+        measurement_date: "2026-01-20",
+        impact_type: "proximate",
+      };
+
+      const measurementsWithZero = new Map<string, Measurement>([
+        ["meas-zero", measurementWithZero],
+      ]);
+
+      // Should not throw when rendering with zero expected_value
+      expect(() => {
+        render(
+          <PropertiesPanel
+            {...defaultProps}
+            measurements={measurementsWithZero}
+          />
+        );
+      }).not.toThrow();
+    });
+
+    it("should render without crashing when all measurements have zero expected_value", () => {
+      const measurementsAllZero = new Map<string, Measurement>([
+        [
+          "meas-1",
+          {
+            id: "meas-1",
+            node_id: "node-1",
+            metric_name: "Test Metric 1",
+            actual_value: 100,
+            expected_value: 0,
+            impact_type: "proximate",
+            measurement_date: "2026-01-20",
+          },
+        ],
+        [
+          "meas-2",
+          {
+            id: "meas-2",
+            node_id: "node-1",
+            metric_name: "Test Metric 2",
+            actual_value: 200,
+            expected_value: 0,
+            impact_type: "downstream",
+            measurement_date: "2026-01-20",
+          },
+        ],
+      ]);
+
+      // Should not throw when all measurements have zero expected_value
+      expect(() => {
+        render(
+          <PropertiesPanel
+            {...defaultProps}
+            measurements={measurementsAllZero}
+          />
+        );
+      }).not.toThrow();
+    });
+
+    it("should render without crashing with mixed valid and zero expected_value measurements", () => {
+      const mixedMeasurements = new Map<string, Measurement>([
+        [
+          "meas-valid",
+          {
+            id: "meas-valid",
+            node_id: "node-1",
+            metric_name: "Valid Metric",
+            expected_value: 100,
+            actual_value: 90,
+            measurement_date: "2026-01-20",
+            impact_type: "proximate",
+          },
+        ],
+        [
+          "meas-zero",
+          {
+            id: "meas-zero",
+            node_id: "node-1",
+            metric_name: "Zero Expected",
+            expected_value: 0,
+            actual_value: 50,
+            measurement_date: "2026-01-20",
+            impact_type: "downstream",
+          },
+        ],
+      ]);
+
+      // Should render without errors and handle both valid and invalid measurements
+      expect(() => {
+        render(
+          <PropertiesPanel {...defaultProps} measurements={mixedMeasurements} />
+        );
+      }).not.toThrow();
+    });
+  });
 });

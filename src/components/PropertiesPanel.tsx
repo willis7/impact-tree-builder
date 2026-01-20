@@ -85,7 +85,7 @@ interface PropertiesPanelProps {
 interface SortableMeasurementItemProps {
   measurement: Measurement;
   index: number;
-  performance: number;
+  performance: number | null;
   onDelete?: (measurementId: string) => void;
 }
 
@@ -105,7 +105,7 @@ function SortableMeasurementItem({ measurement, index, performance, onDelete }: 
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const isGood = performance >= 0.8;
+  const isGood = performance !== null && performance >= 0.8;
 
   return (
     <div
@@ -133,12 +133,18 @@ function SortableMeasurementItem({ measurement, index, performance, onDelete }: 
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Badge
-            variant={isGood ? "success" : "destructive"}
-            className="text-xs"
-          >
-            {(performance * 100).toFixed(0)}%
-          </Badge>
+          {performance !== null ? (
+            <Badge
+              variant={isGood ? "success" : "destructive"}
+              className="text-xs"
+            >
+              {(performance * 100).toFixed(0)}%
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs">
+              N/A
+            </Badge>
+          )}
           {onDelete && (
             <button
               onClick={() => onDelete(measurement.id)}
@@ -279,7 +285,9 @@ export const PropertiesPanel = memo(function PropertiesPanel({
 
   const calculateMeasurementPerformance = useCallback(
     (measurement: Measurement) => {
-      if (measurement.expected_value === 0) return 0;
+      // Return null when expected_value is 0 to indicate no valid data
+      // (0% performance vs. "no data" are semantically different)
+      if (measurement.expected_value === 0) return null;
       return Math.abs(measurement.actual_value / measurement.expected_value);
     },
     []

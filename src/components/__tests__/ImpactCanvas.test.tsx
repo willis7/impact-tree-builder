@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ImpactCanvas } from "../ImpactCanvas";
-import type { Node, Relationship } from "@/types";
+import type { Node, Relationship, Measurement } from "@/types";
 import "@testing-library/jest-dom/vitest";
 
 /**
@@ -247,6 +247,107 @@ describe("ImpactCanvas", () => {
       // Should render without throwing errors when onZoom prop is not provided
       expect(() => {
         render(<ImpactCanvas {...defaultProps} />);
+      }).not.toThrow();
+    });
+  });
+
+  describe("Division by Zero Handling", () => {
+    it("should handle measurements with zero expected_value without crashing", () => {
+      const measurementsWithZero = new Map<string, Measurement>([
+        [
+          "meas-1",
+          {
+            id: "meas-1",
+            node_id: "node-1",
+            metric_name: "Test Metric",
+            actual_value: 100,
+            expected_value: 0, // Division by zero case
+            impact_type: "proximate",
+            measurement_date: "2026-01-20",
+          },
+        ],
+      ]);
+
+      // Should not throw when rendering with zero expected_value
+      expect(() => {
+        render(
+          <ImpactCanvas {...defaultProps} measurements={measurementsWithZero} />
+        );
+      }).not.toThrow();
+    });
+
+    it("should handle nodes with only zero expected_value measurements", () => {
+      const measurementsAllZero = new Map<string, Measurement>([
+        [
+          "meas-1",
+          {
+            id: "meas-1",
+            node_id: "node-1",
+            metric_name: "Test Metric 1",
+            actual_value: 100,
+            expected_value: 0,
+            impact_type: "proximate",
+            measurement_date: "2026-01-20",
+          },
+        ],
+        [
+          "meas-2",
+          {
+            id: "meas-2",
+            node_id: "node-1",
+            metric_name: "Test Metric 2",
+            actual_value: 200,
+            expected_value: 0,
+            impact_type: "downstream",
+            measurement_date: "2026-01-20",
+          },
+        ],
+      ]);
+
+      // Should not throw when all measurements have zero expected_value
+      expect(() => {
+        render(
+          <ImpactCanvas
+            {...defaultProps}
+            measurements={measurementsAllZero}
+          />
+        );
+      }).not.toThrow();
+    });
+
+    it("should correctly calculate performance with mixed valid and invalid measurements", () => {
+      const mixedMeasurements = new Map<string, Measurement>([
+        [
+          "meas-1",
+          {
+            id: "meas-1",
+            node_id: "node-1",
+            metric_name: "Valid Metric",
+            actual_value: 80,
+            expected_value: 100,
+            impact_type: "proximate",
+            measurement_date: "2026-01-20",
+          },
+        ],
+        [
+          "meas-2",
+          {
+            id: "meas-2",
+            node_id: "node-1",
+            metric_name: "Invalid Metric",
+            actual_value: 100,
+            expected_value: 0, // Should be filtered out
+            impact_type: "downstream",
+            measurement_date: "2026-01-20",
+          },
+        ],
+      ]);
+
+      // Should render without errors and only use valid measurements
+      expect(() => {
+        render(
+          <ImpactCanvas {...defaultProps} measurements={mixedMeasurements} />
+        );
       }).not.toThrow();
     });
   });

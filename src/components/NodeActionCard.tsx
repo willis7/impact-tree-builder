@@ -45,10 +45,18 @@ export const NodeActionCard = memo(function NodeActionCard({
   // Calculate average performance
   const avgPerformance = useMemo(() => {
     if (nodeMeasurements.length === 0) return null;
-    const total = nodeMeasurements.reduce((sum, m) => {
+    
+    // Filter out measurements with zero expected_value to avoid division by zero
+    const validMeasurements = nodeMeasurements.filter(
+      (m) => m.expected_value !== 0
+    );
+    
+    if (validMeasurements.length === 0) return null;
+    
+    const total = validMeasurements.reduce((sum, m) => {
       return sum + (m.actual_value / m.expected_value) * 100;
     }, 0);
-    return Math.round(total / nodeMeasurements.length);
+    return Math.round(total / validMeasurements.length);
   }, [nodeMeasurements]);
 
   return (
