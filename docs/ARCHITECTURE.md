@@ -38,36 +38,35 @@ Key entry points:
 
 ```mermaid
 flowchart TB
-  ImpactTreeApp[ImpactTreeApp]
+  ImpactTreeApp["ImpactTreeApp"]
 
-  subgraph CentralState[Central state]
-    useImpactTreeState[useImpactTreeState]
-    state[(state)]
-    actions[(actions)]
-    operations[(operations)]
+  subgraph CentralState["Central state"]
+    useImpactTreeState["useImpactTreeState"]
+    state[("state")]
+    actions[("actions")]
+    operations[("operations")]
     useImpactTreeState --> state
     useImpactTreeState --> actions
     useImpactTreeState --> operations
   end
 
-  subgraph UI[UI components]
-    Sidebar[Sidebar]
-    ImpactCanvas[ImpactCanvas]
-    PropertiesPanel[PropertiesPanel]
-    FloatingToolbar[FloatingToolbar]
-    NodeActionCard[NodeActionCard]
-    CanvasControls[CanvasControls]
-    HelpDialog[HelpDialog (lazy)]
-    Theme[ThemeToggle / theme-provider]
+  subgraph UI["UI components"]
+    Sidebar["Sidebar"]
+    ImpactCanvas["ImpactCanvas"]
+    PropertiesPanel["PropertiesPanel"]
+    FloatingToolbar["FloatingToolbar"]
+    NodeActionCard["NodeActionCard"]
+    HelpDialog["HelpDialog (lazy)"]
+    Theme["ThemeToggle / theme-provider"]
   end
 
-  subgraph Hooks[Interaction hooks]
-    useNodeOperations[useNodeOperations]
-    useCanvasOperations[useCanvasOperations]
-    useDragNode[useDragNode]
-    useDragOperations[useDragOperations]
-    useCanvasAutoPan[useCanvasAutoPan]
-    useKeyboardNavigation[useKeyboardNavigation]
+  subgraph Hooks["Interaction hooks"]
+    useNodeOperations["useNodeOperations"]
+    useCanvasOperations["useCanvasOperations"]
+    useDragNode["useDragNode"]
+    useDragOperations["useDragOperations"]
+    useCanvasAutoPan["useCanvasAutoPan"]
+    useKeyboardNavigation["useKeyboardNavigation"]
   end
 
   ImpactTreeApp --> useImpactTreeState
@@ -145,19 +144,19 @@ classDiagram
     +string id
     +string name
     +string description
-    +"business_metric"|"product_metric"|"initiative"|"initiative_positive"|"initiative_negative" node_type
+    +string node_type
     +number level
     +number position_x
     +number position_y
     +string color
-    +"rectangle"|"ellipse" shape
+    +string shape
   }
 
   class Relationship {
     +string id
     +string source_node_id
     +string target_node_id
-    +"desirable_effect"|"undesirable_effect"|"rollup" relationship_type
+    +string relationship_type
     +string color
     +number strength
   }
@@ -169,9 +168,9 @@ classDiagram
     +number expected_value
     +number actual_value
     +string measurement_date
-    +MeasurementPeriod? measurement_period
-    +"proximate"|"downstream" impact_type
-    +number? order
+    +string measurement_period
+    +string impact_type
+    +number order
   }
 
   ImpactTree "1" --> "0..*" Node
@@ -220,19 +219,19 @@ It returns:
 
 ```mermaid
 flowchart LR
-  subgraph Hook[useImpactTreeState]
-    State[state]
-    Actions[actions: setTree/setNodes/...]
-    Ops[operations]
+  subgraph Hook["useImpactTreeState"]
+    State["state"]
+    Actions["actions"]
+    Ops["operations"]
   end
 
-  subgraph OpsDetail[operations]
-    NewTree[handleNewTree]
-    Save[handleSave -> localStorage]
-    ExportJSON[handleExportJSON]
-    ExportPNG[handleExportPNG]
-    ExportHTML[handleExportHTML]
-    Import[handleImport + handleFileSelect]
+  subgraph OpsDetail["operations"]
+    NewTree["handleNewTree"]
+    Save["handleSave"]
+    ExportJSON["handleExportJSON"]
+    ExportPNG["handleExportPNG"]
+    ExportHTML["handleExportHTML"]
+    Import["handleImport / handleFileSelect"]
   end
 
   Hook --> State
@@ -285,17 +284,17 @@ sequenceDiagram
   participant User
   participant ImpactCanvas
   participant ImpactTreeApp
-  participant useCanvasOperations
-  participant State as viewBox state
+  participant CanvasOps as useCanvasOperations
+  participant ViewBox as viewBox
 
-  User->>ImpactCanvas: wheel event
+  User->>ImpactCanvas: wheel
   ImpactCanvas->>ImpactTreeApp: onZoom(factor, centerX, centerY)
-  ImpactTreeApp->>useCanvasOperations: handleZoom(factor, centerX, centerY)
-  useCanvasOperations->>State: setViewBox(prev => new scale + adjusted x/y)
+  ImpactTreeApp->>CanvasOps: handleZoom(factor, centerX, centerY)
+  CanvasOps->>ViewBox: setViewBox(update)
 
-  User->>ImpactCanvas: mousedown+move on empty canvas
+  User->>ImpactCanvas: drag empty space
   ImpactCanvas->>ImpactTreeApp: onPan(deltaX, deltaY)
-  ImpactTreeApp->>State: setViewBox(prev => prev.x/y + delta)
+  ImpactTreeApp->>ViewBox: setViewBox(update)
 ```
 
 ### Drag-to-create node (sidebar → canvas)
@@ -316,20 +315,20 @@ sequenceDiagram
   participant User
   participant Sidebar
   participant DndContext
-  participant useDragOperations
-  participant useDragNode
+  participant DragOps as useDragOperations
+  participant DragState as useDragNode
   participant NodeOps as useNodeOperations
 
-  User->>Sidebar: drag node-type button
-  Sidebar->>DndContext: start drag (nodeType in active.data)
-  DndContext->>useDragOperations: onDragStart
-  useDragOperations->>useDragNode: startDrag(nodeType)
+  User->>Sidebar: drag node type
+  Sidebar->>DndContext: start drag
+  DndContext->>DragOps: onDragStart
+  DragOps->>DragState: startDrag(nodeType)
 
-  User->>DndContext: drop over canvas
-  DndContext->>useDragOperations: onDragEnd(over=canvas-drop-zone)
-  useDragOperations->>useDragNode: endDrag(canvasPosition)
-  useDragNode->>NodeOps: onNodeCreate(nodeType, position)
-  NodeOps->>NodeOps: addNode(x,y,nodeType)
+  User->>DndContext: drop on canvas
+  DndContext->>DragOps: onDragEnd
+  DragOps->>DragState: endDrag(canvasPosition)
+  DragState->>NodeOps: onNodeCreate(nodeType, position)
+  NodeOps->>NodeOps: addNode(x, y, nodeType)
 ```
 
 ### Move node (drag within canvas)
@@ -355,20 +354,18 @@ sequenceDiagram
   participant User
   participant ImpactCanvas
   participant NodeOps as useNodeOperations
-  participant State as relationships Map
+  participant Relationships as relationships
 
-  User->>ImpactCanvas: set mode = connect
+  User->>ImpactCanvas: switch to connect mode
   User->>ImpactCanvas: mousedown on source node
-  ImpactCanvas->>ImpactCanvas: connectDragState.isDragging=true
+  ImpactCanvas->>ImpactCanvas: start connect drag
 
-  User->>ImpactCanvas: mousemove (hover target node)
-  ImpactCanvas->>ImpactCanvas: connectDragState.hoveredNodeId=target
+  User->>ImpactCanvas: mousemove over target
+  ImpactCanvas->>ImpactCanvas: track hovered target
 
   User->>ImpactCanvas: mouseup
-  ImpactCanvas->>NodeOps: onCreateRelationship(source, target)
-  NodeOps->>NodeOps: validate not self/duplicate
-  NodeOps->>State: setRelationships(add relationship)
-  NodeOps->>State: setMode(select) & setConnectSourceNodeId(null)
+  ImpactCanvas->>NodeOps: createRelationship(source, target)
+  NodeOps->>Relationships: setRelationships(add)
 ```
 
 ### Auto-pan while dragging near edges
@@ -401,22 +398,22 @@ Validation:
 ```mermaid
 sequenceDiagram
   participant User
-  participant ImpactTreeApp
-  participant useImpactTreeState
-  participant FileReader
+  participant App as ImpactTreeApp
+  participant State as useImpactTreeState
+  participant Reader as FileReader
   participant Validation as validateImportedData
 
-  User->>ImpactTreeApp: click Load
-  ImpactTreeApp->>useImpactTreeState: handleImport()
-  useImpactTreeState->>ImpactTreeApp: fileInputRef.click()
+  User->>App: click Load
+  App->>State: handleImport()
+  State->>App: open file picker
 
-  User->>ImpactTreeApp: selects file
-  ImpactTreeApp->>useImpactTreeState: handleFileSelect(event)
-  useImpactTreeState->>FileReader: readAsText(file)
-  FileReader-->>useImpactTreeState: onload(text)
-  useImpactTreeState->>Validation: validateImportedData(parsed)
-  Validation-->>useImpactTreeState: isValid + errors
-  useImpactTreeState->>useImpactTreeState: setTree/setNodes/setRelationships/setMeasurements
+  User->>App: select file
+  App->>State: handleFileSelect(event)
+  State->>Reader: readAsText(file)
+  Reader-->>State: onload(text)
+  State->>Validation: validateImportedData(parsed)
+  Validation-->>State: ok / errors
+  State->>State: setTree + setMaps
 ```
 
 ### Export JSON / PNG / HTML
@@ -433,19 +430,19 @@ Exports are implemented in `src/lib/export-utils.ts`:
 
 ```mermaid
 flowchart TB
-  App[ImpactTreeApp] --> Ops[useImpactTreeState.operations]
+  App["ImpactTreeApp"] --> Ops["operations"]
 
-  Ops -->|Export JSON| ExportJSON[exportAsJSON]
-  Ops -->|Export PNG| ExportPNG[exportAsPNG]
-  Ops -->|Export HTML| ExportHTML[exportAsHTML]
+  Ops --> ExportJSON["exportAsJSON"]
+  Ops --> ExportPNG["exportAsPNG"]
+  Ops --> ExportHTML["exportAsHTML"]
 
-  ExportPNG --> SVGSerialize[XMLSerializer.serializeToString(svg)]
-  SVGSerialize --> CanvasDraw[draw SVG image on canvas]
-  CanvasDraw --> DownloadPNG[download blob]
+  ExportPNG --> SVGSerialize["serialize SVG"]
+  SVGSerialize --> CanvasDraw["draw to canvas"]
+  CanvasDraw --> DownloadPNG["download PNG"]
 
-  ExportHTML --> GenerateSVG[generateTreeSVG]
-  GenerateSVG --> HTMLTemplate[generateHTMLPage]
-  HTMLTemplate --> DownloadHTML[download blob]
+  ExportHTML --> GenerateSVG["generateTreeSVG"]
+  GenerateSVG --> HTMLTemplate["generateHTMLPage"]
+  HTMLTemplate --> DownloadHTML["download HTML"]
 ```
 
 ---
