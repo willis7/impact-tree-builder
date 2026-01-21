@@ -1,3 +1,4 @@
+import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@/test/test-utils";
 import { PropertiesPanel } from "../PropertiesPanel";
@@ -191,6 +192,44 @@ describe("PropertiesPanel", () => {
     });
   });
 
+  it("should show delete button for measurements and remove after click", async () => {
+    const user = userEvent.setup();
+
+    function TestHarness() {
+      const [measurements, setMeasurements] = React.useState(mockMeasurements);
+
+      return (
+        <PropertiesPanel
+          {...defaultProps}
+          measurements={measurements}
+          onDeleteMeasurement={(measurementId) => {
+            setMeasurements((prev) => {
+              const next = new Map(prev);
+              next.delete(measurementId);
+              return next;
+            });
+          }}
+        />
+      );
+    }
+
+    render(<TestHarness />);
+
+    // Click on Metrics tab
+    const metricsTab = screen.getByRole("tab", { name: /metrics/i });
+    await user.click(metricsTab);
+
+    // Delete button should exist
+    const deleteButton = await screen.findByRole("button", {
+      name: /delete measurement test metric/i,
+    });
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Test Metric")).not.toBeInTheDocument();
+    });
+  });
+
   it("should show performance badge for measurement", async () => {
     const user = userEvent.setup();
     render(<PropertiesPanel {...defaultProps} />);
@@ -336,6 +375,37 @@ describe("PropertiesPanel", () => {
 
     expect(screen.getByText(/relationship/i)).toBeDefined();
     expect(screen.getByText("Source Node")).toBeDefined();
+  });
+
+  it("should show delete button for relationship and clear selection after click", async () => {
+    const user = userEvent.setup();
+
+    function TestHarness() {
+      const [selectedRelationship, setSelectedRelationship] =
+        React.useState<Relationship | null>(mockRelationship);
+
+      return (
+        <PropertiesPanel
+          {...defaultProps}
+          selectedNode={null}
+          selectedRelationship={selectedRelationship}
+          onDeleteRelationship={() => {
+            setSelectedRelationship(null);
+          }}
+        />
+      );
+    }
+
+    render(<TestHarness />);
+
+    const deleteRelationshipButton = screen.getByRole("button", {
+      name: /delete relationship/i,
+    });
+    await user.click(deleteRelationshipButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/select a node or relationship/i)).toBeDefined();
+    });
   });
 
   it("should show message when nothing is selected", () => {
