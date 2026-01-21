@@ -191,7 +191,7 @@ const StatCard = memo(function StatCard({
 /**
  * Modern Sidebar component with collapsible sections
  */
-export function Sidebar({
+export const Sidebar = memo(function Sidebar({
   tree,
   onTreeUpdate,
   mode,
@@ -432,4 +432,4 @@ export function Sidebar({
       </ScrollArea>
     </aside>
   );
-}
+});
