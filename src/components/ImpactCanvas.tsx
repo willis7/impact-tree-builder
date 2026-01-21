@@ -49,6 +49,9 @@ const NODE_COLORS: Record<
     secondary: "#22C55E",
     glow: "rgba(16, 185, 129, 0.4)",
   },
+  // Initiative types: "initiative" is the base type stored in data,
+  // while "initiative_positive" and "initiative_negative" are display variants.
+  // Both "initiative" and "initiative_positive" share the same purple color scheme.
   initiative: {
     primary: "#8B5CF6",
     secondary: "#A855F7",
