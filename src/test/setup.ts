@@ -1,4 +1,5 @@
-import { expect, afterEach } from "vitest";
+import * as React from "react";
+import { expect, afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 import * as matchers from "@testing-library/jest-dom/matchers";
 
@@ -45,4 +46,22 @@ const localStorageMock = (() => {
 
 Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
+});
+
+// Radix Tooltip uses async state updates that can emit noisy React act() warnings
+// in unit tests. We don't need Tooltip behavior in unit tests, so mock to
+// synchronous pass-through components.
+vi.mock("@/components/ui/tooltip", () => {
+  const Passthrough = ({
+    children,
+  }: {
+    children: React.ReactNode;
+  }): React.ReactNode => children;
+
+  return {
+    TooltipProvider: Passthrough,
+    Tooltip: Passthrough,
+    TooltipTrigger: Passthrough,
+    TooltipContent: () => null,
+  };
 });
