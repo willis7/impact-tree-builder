@@ -50,7 +50,6 @@ import { FloatingToolbar } from "./FloatingToolbar";
 import { NodeActionCard } from "./NodeActionCard";
 import { AnimatePresence } from "framer-motion";
 import type { Measurement } from "@/types";
-import type { NodeType } from "@/types/drag";
 import { getNodeTypeLabel } from "@/lib/node-utils";
 
 /**
@@ -275,26 +274,6 @@ export function ImpactTreeApp() {
     });
     setSelectedRelationshipId(null);
   }, [setRelationships, setSelectedRelationshipId]);
-
-  /**
-   * Gets the variant for a node type badge
-   */
-  const getNodeTypeVariant = (
-    nodeType: NodeType
-  ): "default" | "secondary" | "destructive" | "outline" => {
-    switch (nodeType) {
-      case "business_metric":
-        return "default";
-      case "product_metric":
-        return "secondary";
-      case "initiative_positive":
-        return "outline";
-      case "initiative_negative":
-        return "destructive";
-      default:
-        return "default";
-    }
-  };
 
   return (
     <DndContext
@@ -542,7 +521,22 @@ export function ImpactTreeApp() {
         {dragState.isDragging && dragState.activeNodeType ? (
           <div className="opacity-70 cursor-grabbing animate-pulse">
             <Badge
-              variant={getNodeTypeVariant(dragState.activeNodeType)}
+              variant={(() => {
+                // Gets the variant for a node type badge
+                const nodeType = dragState.activeNodeType;
+                switch (nodeType) {
+                  case "business_metric":
+                    return "default";
+                  case "product_metric":
+                    return "secondary";
+                  case "initiative_positive":
+                    return "outline";
+                  case "initiative_negative":
+                    return "destructive";
+                  default:
+                    return "default";
+                }
+              })()}
               className="shadow-lg transition-transform duration-150"
             >
               {getNodeTypeLabel(dragState.activeNodeType)}
