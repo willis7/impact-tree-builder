@@ -1,5 +1,4 @@
 import { memo, useMemo } from "react";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -60,22 +59,15 @@ export const NodeActionCard = memo(function NodeActionCard({
   }, [nodeMeasurements]);
 
   return (
-    <motion.div
-      className="absolute z-20 pointer-events-auto"
+    <div
+      className="absolute z-20 pointer-events-auto animate-in fade-in duration-150"
       style={{
         left: `${nodePosition.x}px`,
         top: `${nodePosition.y}px`,
+        transform: "translate(40px, -50%)",
       }}
-      initial={{ opacity: 0, x: 20, y: "-50%" }}
-      animate={{ opacity: 1, x: 40, y: "-50%" }}
-      exit={{ opacity: 0, x: 20, y: "-50%" }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      <motion.div
-        className="flex flex-col gap-2 p-2 rounded-xl bg-card/95 backdrop-blur-sm border shadow-elevated"
-        whileHover={{ scale: 1.02 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      >
+      <div className="flex flex-col gap-2 p-2 rounded-xl bg-card/95 backdrop-blur-sm border shadow-elevated transition-transform duration-150 hover:scale-[1.02]">
         {/* Quick actions */}
         <div className="flex items-center gap-1">
           <Tooltip>
@@ -134,7 +126,7 @@ export const NodeActionCard = memo(function NodeActionCard({
             </div>
           </>
         )}
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 });

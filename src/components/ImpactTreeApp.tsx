@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -18,7 +18,6 @@ import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { HelpDialog } from "./HelpDialog";
 import {
   Tooltip,
   TooltipContent,
@@ -43,12 +42,15 @@ import {
   PanelRight,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
+
+const HelpDialog = lazy(() =>
+  import("./HelpDialog").then((m) => ({ default: m.HelpDialog }))
+);
 import { ImpactCanvas } from "./ImpactCanvas";
 import { Sidebar } from "./Sidebar";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { FloatingToolbar } from "./FloatingToolbar";
 import { NodeActionCard } from "./NodeActionCard";
-import { AnimatePresence } from "framer-motion";
 import type { Measurement } from "@/types";
 import { getNodeTypeLabel } from "@/lib/node-utils";
 
@@ -391,7 +393,12 @@ export function ImpactTreeApp() {
                 </TooltipContent>
               </Tooltip>
 
-              <HelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
+               {helpDialogOpen ? (
+                 <Suspense fallback={null}>
+                   <HelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
+                 </Suspense>
+               ) : null}
+
 
               <Separator orientation="vertical" className="h-8" />
 
@@ -468,18 +475,16 @@ export function ImpactTreeApp() {
                />
 
                {/* Node Action Card - appears when node is selected */}
-               <AnimatePresence>
-                 {selectedNodeId && selectedNodeScreenPosition && nodes.get(selectedNodeId) && (
-                   <NodeActionCard
-                     key={selectedNodeId}
-                     node={nodes.get(selectedNodeId)!}
-                     measurements={measurements}
-                     nodePosition={selectedNodeScreenPosition}
-                     onDelete={nodeOperations.deleteNode}
-                     onStartConnect={handleStartConnectFromCard}
-                   />
-                 )}
-               </AnimatePresence>
+                {selectedNodeId && selectedNodeScreenPosition && nodes.get(selectedNodeId) && (
+                  <NodeActionCard
+                    node={nodes.get(selectedNodeId)!}
+                    measurements={measurements}
+                    nodePosition={selectedNodeScreenPosition}
+                    onDelete={nodeOperations.deleteNode}
+                    onStartConnect={handleStartConnectFromCard}
+                  />
+                )}
+
                </main>
 
              {/* Properties toggle button - visible on small screens */}
