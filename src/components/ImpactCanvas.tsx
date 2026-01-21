@@ -1,6 +1,14 @@
 import { useRef, useState, useMemo, useCallback, memo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import type { Node, Relationship, Measurement } from "@/types";
+import {
+  CANVAS_BACKGROUND,
+  CANVAS_INTERACTION,
+  CONNECTION_CURVE,
+  EMPTY_STATE,
+  NODE_DIMENSIONS,
+  RELATIONSHIP_RENDERING,
+} from "@/lib/constants";
 import { screenToCanvasCoordinates } from "@/lib/drag-utils";
 
 /**
@@ -93,7 +101,10 @@ function calculateBezierPath(
   const distance = Math.sqrt(dx * dx + dy * dy);
 
   // Control point offset based on distance
-  const offset = Math.min(distance * 0.3, 100);
+  const offset = Math.min(
+    distance * CONNECTION_CURVE.controlPointDistanceFactor,
+    CONNECTION_CURVE.maxControlPointOffset
+  );
 
   // Determine curve direction based on relative positions
   let cx1, cy1, cx2, cy2;
@@ -144,8 +155,8 @@ interface ImpactCanvasProps {
 }
 
 // Node size constants
-const NODE_RADIUS = 28;
-const NODE_RING_WIDTH = 4;
+const NODE_RADIUS = NODE_DIMENSIONS.radius;
+const NODE_RING_WIDTH = NODE_DIMENSIONS.ringWidth;
 const NODE_OUTER_RADIUS = NODE_RADIUS + NODE_RING_WIDTH;
 
 export const ImpactCanvas = memo(function ImpactCanvas({
@@ -207,7 +218,7 @@ export const ImpactCanvas = memo(function ImpactCanvas({
     if (isDraggingNode) return;
 
     const timeSinceDragEnd = Date.now() - lastDragEndTime;
-    if (timeSinceDragEnd < 150) {
+    if (timeSinceDragEnd < CANVAS_INTERACTION.clickAfterDragIgnoreMs) {
       return;
     }
 
@@ -375,7 +386,8 @@ export const ImpactCanvas = memo(function ImpactCanvas({
 
     e.preventDefault();
 
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    const zoomFactor =
+      e.deltaY > 0 ? CANVAS_INTERACTION.zoomOutFactor : CANVAS_INTERACTION.zoomInFactor;
 
     const rect = svgRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -444,7 +456,13 @@ export const ImpactCanvas = memo(function ImpactCanvas({
       {nodes.size === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center p-8 max-w-md">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 mx-auto mb-4 flex items-center justify-center shadow-lg">
+            <div
+              className="rounded-2xl bg-gradient-to-br from-primary to-primary/60 mx-auto mb-4 flex items-center justify-center shadow-lg"
+              style={{
+                width: EMPTY_STATE.iconSize * 4,
+                height: EMPTY_STATE.iconSize * 4,
+              }}
+            >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -510,7 +528,10 @@ export const ImpactCanvas = memo(function ImpactCanvas({
             width="200%"
             height="200%"
           >
-            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+              <feGaussianBlur
+                stdDeviation={NODE_DIMENSIONS.ringWidth}
+                result="coloredBlur"
+              />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
@@ -562,13 +583,19 @@ export const ImpactCanvas = memo(function ImpactCanvas({
           </marker>
 
           {/* Subtle grid pattern */}
-          <pattern
-            id="grid"
-            width="40"
-            height="40"
-            patternUnits="userSpaceOnUse"
-          >
-            <circle cx="20" cy="20" r="1" fill="currentColor" className="fill-border/30" />
+            <pattern
+              id="grid"
+              width={CANVAS_BACKGROUND.gridSize}
+              height={CANVAS_BACKGROUND.gridSize}
+              patternUnits="userSpaceOnUse"
+            >
+              <circle
+                cx={CANVAS_BACKGROUND.gridDotOffset}
+                cy={CANVAS_BACKGROUND.gridDotOffset}
+                r={CANVAS_BACKGROUND.gridDotRadius}
+                fill="currentColor"
+                className="fill-border/30"
+              />
           </pattern>
         </defs>
 
@@ -589,18 +616,18 @@ export const ImpactCanvas = memo(function ImpactCanvas({
           prevent users from seeing the canvas edge during normal panning operations.
         */}
         <rect
-          x={viewBox.x - 5000}
-          y={viewBox.y - 5000}
-          width={10000}
-          height={10000}
+          x={viewBox.x - CANVAS_BACKGROUND.backgroundPadding}
+          y={viewBox.y - CANVAS_BACKGROUND.backgroundPadding}
+          width={CANVAS_BACKGROUND.backgroundSize}
+          height={CANVAS_BACKGROUND.backgroundSize}
           className="fill-background"
         />
 
         <rect
-          x={viewBox.x - 5000}
-          y={viewBox.y - 5000}
-          width={10000}
-          height={10000}
+          x={viewBox.x - CANVAS_BACKGROUND.backgroundPadding}
+          y={viewBox.y - CANVAS_BACKGROUND.backgroundPadding}
+          width={CANVAS_BACKGROUND.backgroundSize}
+          height={CANVAS_BACKGROUND.backgroundSize}
           fill="url(#grid)"
         />
 
@@ -641,7 +668,7 @@ export const ImpactCanvas = memo(function ImpactCanvas({
                 <path
                   d={path}
                   stroke="transparent"
-                  strokeWidth={16}
+                  strokeWidth={RELATIONSHIP_RENDERING.hitAreaStrokeWidth}
                   fill="none"
                   className="cursor-pointer"
                 />
@@ -702,7 +729,7 @@ export const ImpactCanvas = memo(function ImpactCanvas({
                     connectDragState.hoveredNodeId ? "#10B981" : "#8B5CF6"
                   }
                   strokeWidth={2}
-                  strokeDasharray="8,4"
+                  strokeDasharray={RELATIONSHIP_RENDERING.previewDashArray}
                   fill="none"
                   opacity={0.8}
                   pointerEvents="none"
@@ -738,25 +765,25 @@ export const ImpactCanvas = memo(function ImpactCanvas({
               >
                 {/* Selection ring (animated) */}
                 {isSelected && (
-                  <circle
-                    r={NODE_OUTER_RADIUS + 4}
-                    fill="none"
-                    stroke={colors.primary}
-                    strokeWidth={2}
-                    strokeDasharray="4,4"
-                    opacity={0.6}
-                    className="animate-spin"
-                    style={{ animationDuration: "8s" }}
-                  />
+                    <circle
+                      r={NODE_OUTER_RADIUS + NODE_DIMENSIONS.selectionRingPadding}
+                      fill="none"
+                      stroke={colors.primary}
+                      strokeWidth={2}
+                      strokeDasharray={RELATIONSHIP_RENDERING.selectionDashArray}
+                      opacity={0.6}
+                      className="animate-spin"
+                      style={{ animationDuration: "8s" }}
+                    />
                 )}
 
                 {/* Outer glow for hover/connect */}
                 {(isHovered || isConnectSource) && (
-                  <circle
-                    r={NODE_OUTER_RADIUS + 6}
-                    fill={isHovered ? "#10B981" : "#8B5CF6"}
-                    opacity={0.2}
-                  />
+                    <circle
+                      r={NODE_OUTER_RADIUS + NODE_DIMENSIONS.hoverGlowPadding}
+                      fill={isHovered ? "#10B981" : "#8B5CF6"}
+                      opacity={0.2}
+                    />
                 )}
 
                 {/* Gradient ring */}
@@ -803,12 +830,12 @@ export const ImpactCanvas = memo(function ImpactCanvas({
                 {/* Performance indicator */}
                 {hasPerformance !== null && (
                   <circle
-                    cx={NODE_RADIUS - 4}
-                    cy={-NODE_RADIUS + 4}
-                    r={6}
+                    cx={NODE_RADIUS - NODE_DIMENSIONS.performanceIndicatorOffset}
+                    cy={-NODE_RADIUS + NODE_DIMENSIONS.performanceIndicatorOffset}
+                    r={NODE_DIMENSIONS.performanceIndicatorRadius}
                     fill={hasPerformance ? "#10B981" : "#EF4444"}
                     stroke="white"
-                    strokeWidth={2}
+                    strokeWidth={NODE_DIMENSIONS.performanceIndicatorStrokeWidth}
                   />
                 )}
 

@@ -1,4 +1,5 @@
-import type { ImpactTree, Node, Relationship, Measurement, TreeData } from '@/types';
+import type { ImpactTree, Node, Relationship, Measurement, TreeData } from "@/types";
+import { EXPORT } from "@/lib/constants";
 
 /**
  * Complete tree state for export operations
@@ -44,8 +45,14 @@ export async function exportAsPNG(tree: ImpactTree, canvasElement: SVGSVGElement
   try {
     // Get the SVG dimensions
     const bbox = canvasElement.getBBox();
-    const width = Math.max(bbox.width + bbox.x, canvasElement.clientWidth || 800);
-    const height = Math.max(bbox.height + bbox.y, canvasElement.clientHeight || 600);
+    const width = Math.max(
+      bbox.width + bbox.x,
+      canvasElement.clientWidth || EXPORT.pngFallbackClientWidth
+    );
+    const height = Math.max(
+      bbox.height + bbox.y,
+      canvasElement.clientHeight || EXPORT.pngFallbackClientHeight
+    );
 
     // Serialize SVG to string
     const svgData = new XMLSerializer().serializeToString(canvasElement);
@@ -63,7 +70,7 @@ export async function exportAsPNG(tree: ImpactTree, canvasElement: SVGSVGElement
     }
 
     // Set canvas size with higher resolution
-    const scale = 2;
+    const scale = EXPORT.pngScale;
     canvas.width = width * scale;
     canvas.height = height * scale;
 
@@ -152,11 +159,11 @@ function generateTreeSVG(nodes: Map<string, Node>, relationships: Map<string, Re
 
   // Calculate visual bounds accounting for actual node sizes
   // All nodes are 150px wide and 50px tall, positioned at their top-left corner
-  const nodeBounds = nodeArray.map(node => ({
+  const nodeBounds = nodeArray.map((node) => ({
     left: node.position_x,
-    right: node.position_x + 150,
+    right: node.position_x + EXPORT.svgNodeWidth,
     top: node.position_y,
-    bottom: node.position_y + 50
+    bottom: node.position_y + EXPORT.svgNodeHeight,
   }));
 
   const minX = Math.min(...nodeBounds.map(b => b.left));
@@ -164,7 +171,7 @@ function generateTreeSVG(nodes: Map<string, Node>, relationships: Map<string, Re
   const minY = Math.min(...nodeBounds.map(b => b.top));
   const maxY = Math.max(...nodeBounds.map(b => b.bottom));
 
-  const padding = 50;
+  const padding = EXPORT.svgPadding;
   const width = maxX - minX + padding * 2;
   const height = maxY - minY + padding * 2;
 
@@ -182,12 +189,12 @@ function generateTreeSVG(nodes: Map<string, Node>, relationships: Map<string, Re
     const targetNode = nodes.get(rel.target_node_id);
 
     if (sourceNode && targetNode) {
-      const x1 = sourceNode.position_x + 75; // Approximate center of node
-      const y1 = sourceNode.position_y + 25;
-      const x2 = targetNode.position_x + 75;
-      const y2 = targetNode.position_y + 25;
+      const x1 = sourceNode.position_x + EXPORT.svgNodeCenterX; // Approximate center of node
+      const y1 = sourceNode.position_y + EXPORT.svgNodeCenterY;
+      const x2 = targetNode.position_x + EXPORT.svgNodeCenterX;
+      const y2 = targetNode.position_y + EXPORT.svgNodeCenterY;
 
-      svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${rel.color}" stroke-width="2" marker-end="url(#arrowhead)"/>`;
+      svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${rel.color}" stroke-width="${EXPORT.svgRelationshipStrokeWidth}" marker-end="url(#arrowhead)"/>`;
     }
   });
 
@@ -196,13 +203,14 @@ function generateTreeSVG(nodes: Map<string, Node>, relationships: Map<string, Re
 
   // Add nodes
   nodeArray.forEach(node => {
-    const shape = node.shape === 'ellipse' ? 'ellipse' : 'rect';
-    const attrs = shape === 'ellipse'
-      ? `cx="${node.position_x + 75}" cy="${node.position_y + 25}" rx="75" ry="25"`
-      : `x="${node.position_x}" y="${node.position_y}" width="150" height="50" rx="5"`;
+    const shape = node.shape === "ellipse" ? "ellipse" : "rect";
+    const attrs =
+      shape === "ellipse"
+        ? `cx="${node.position_x + EXPORT.svgNodeCenterX}" cy="${node.position_y + EXPORT.svgNodeCenterY}" rx="${EXPORT.svgNodeCenterX}" ry="${EXPORT.svgNodeCenterY}"`
+        : `x="${node.position_x}" y="${node.position_y}" width="${EXPORT.svgNodeWidth}" height="${EXPORT.svgNodeHeight}" rx="${EXPORT.svgNodeCornerRadius}"`;
 
     svg += `<${shape} ${attrs} fill="${node.color}" stroke="#333" stroke-width="1"/>`;
-    svg += `<text x="${node.position_x + 75}" y="${node.position_y + 32}" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#000">${node.name}</text>`;
+    svg += `<text x="${node.position_x + EXPORT.svgNodeCenterX}" y="${node.position_y + 32}" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#000">${node.name}</text>`;
   });
 
   svg += '</g></svg>';

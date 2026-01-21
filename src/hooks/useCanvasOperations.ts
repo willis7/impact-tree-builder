@@ -1,4 +1,5 @@
 import type { Node, ViewBox } from "@/types";
+import { DEFAULT_VIEW_BOX } from "@/lib/constants";
 
 // Re-export ViewBox for backwards compatibility
 export type { ViewBox } from "@/types";
@@ -61,7 +62,7 @@ export function useCanvasOperations(
    * Resets the canvas view to default position and zoom
    */
   const handleResetView = () => {
-    actions.setViewBox({ x: 0, y: 0, width: 1200, height: 800, scale: 1 });
+    actions.setViewBox(DEFAULT_VIEW_BOX);
   };
 
   /**

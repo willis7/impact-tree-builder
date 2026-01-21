@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import type { ImpactTree, Node, Relationship, Measurement, ViewBox } from "@/types";
 import type { NodeType } from "@/types/drag";
 import { exportAsJSON, exportAsPNG, exportAsHTML } from "@/lib/export-utils";
+import { DEFAULT_VIEW_BOX as DEFAULT_VIEW_BOX_CONSTANT } from "@/lib/constants";
 import { validateImportedData } from "@/lib/validation-utils";
 import { sampleData } from "@/data/sampleData";
 import { toast } from "@/hooks/use-toast";
@@ -54,13 +55,7 @@ export interface UseImpactTreeStateReturn {
   operations: ImpactTreeOperations;
 }
 
-const DEFAULT_VIEW_BOX: ViewBox = {
-  x: 0,
-  y: 0,
-  width: 1200,
-  height: 800,
-  scale: 1,
-};
+const DEFAULT_VIEW_BOX: ViewBox = DEFAULT_VIEW_BOX_CONSTANT;
 
 /**
  * Creates a new tree with current date and default metadata
