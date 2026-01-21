@@ -276,15 +276,6 @@ export function ImpactTreeApp() {
     setSelectedRelationshipId(null);
   }, [setRelationships, setSelectedRelationshipId]);
 
-
-
-
-
-
-
-
-
-
   /**
    * Gets the variant for a node type badge
    */
