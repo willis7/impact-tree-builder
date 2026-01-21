@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -18,7 +18,6 @@ import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { HelpDialog } from "./HelpDialog";
 import {
   Tooltip,
   TooltipContent,
@@ -38,14 +37,21 @@ import {
   HelpCircle,
   Plus,
   ChevronDown,
+  Loader2,
+  PanelLeft,
+  PanelRight,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
+
+const HelpDialog = lazy(() =>
+  import("./HelpDialog").then((m) => ({ default: m.HelpDialog }))
+);
 import { ImpactCanvas } from "./ImpactCanvas";
 import { Sidebar } from "./Sidebar";
 import { PropertiesPanel } from "./PropertiesPanel";
-import { CanvasControls } from "./CanvasControls";
+import { FloatingToolbar } from "./FloatingToolbar";
+import { NodeActionCard } from "./NodeActionCard";
 import type { Measurement } from "@/types";
-import type { NodeType } from "@/types/drag";
 import { getNodeTypeLabel } from "@/lib/node-utils";
 
 /**
@@ -98,6 +104,8 @@ export function ImpactTreeApp() {
   // UI-specific state (stays in component)
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [canvasElement, setCanvasElement] = useState<SVGSVGElement | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [propertiesOpen, setPropertiesOpen] = useState(true);
 
   // Track real-time mouse position for accurate drop coordinates
   const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -216,37 +224,58 @@ export function ImpactTreeApp() {
     );
   }, [measurements, setMeasurements]);
 
+  // Calculate screen position for NodeActionCard
+  const selectedNodeScreenPosition = useMemo(() => {
+    if (!selectedNodeId || !canvasElement) return null;
+    const node = nodes.get(selectedNodeId);
+    if (!node) return null;
 
+    const rect = canvasElement.getBoundingClientRect();
+    const canvasWidth = viewBox.width / viewBox.scale;
+    const canvasHeight = viewBox.height / viewBox.scale;
 
+    // Convert canvas coordinates to screen coordinates
+    const screenX = ((node.position_x - viewBox.x) / canvasWidth) * rect.width;
+    const screenY = ((node.position_y - viewBox.y) / canvasHeight) * rect.height;
 
+    return { x: screenX, y: screenY };
+  }, [selectedNodeId, nodes, canvasElement, viewBox]);
 
+  // Handler to start connect mode from action card
+  const handleStartConnectFromCard = useCallback((nodeId: string) => {
+    setMode("connect");
+    setConnectSourceNodeId(nodeId);
+  }, [setMode, setConnectSourceNodeId]);
 
+  // Handler to reorder measurements
+  const handleReorderMeasurements = useCallback((reorderedMeasurements: Measurement[]) => {
+    setMeasurements((prev) => {
+      const newMeasurements = new Map(prev);
+      reorderedMeasurements.forEach((m) => {
+        newMeasurements.set(m.id, m);
+      });
+      return newMeasurements;
+    });
+  }, [setMeasurements]);
 
+  // Handler to delete a measurement
+  const handleDeleteMeasurement = useCallback((measurementId: string) => {
+    setMeasurements((prev) => {
+      const newMeasurements = new Map(prev);
+      newMeasurements.delete(measurementId);
+      return newMeasurements;
+    });
+  }, [setMeasurements]);
 
-
-
-
-
-
-  /**
-   * Gets the variant for a node type badge
-   */
-  const getNodeTypeVariant = (
-    nodeType: NodeType
-  ): "default" | "secondary" | "destructive" | "outline" => {
-    switch (nodeType) {
-      case "business_metric":
-        return "default";
-      case "product_metric":
-        return "secondary";
-      case "initiative_positive":
-        return "outline";
-      case "initiative_negative":
-        return "destructive";
-      default:
-        return "default";
-    }
-  };
+  // Handler to delete a relationship
+  const handleDeleteRelationship = useCallback((relationshipId: string) => {
+    setRelationships((prev) => {
+      const newRelationships = new Map(prev);
+      newRelationships.delete(relationshipId);
+      return newRelationships;
+    });
+    setSelectedRelationshipId(null);
+  }, [setRelationships, setSelectedRelationshipId]);
 
   return (
     <DndContext
@@ -295,9 +324,18 @@ export function ImpactTreeApp() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={operations.handleImport}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Load
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={operations.handleImport}
+                    disabled={operations.isImporting}
+                  >
+                    {operations.isImporting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    {operations.isImporting ? "Loading..." : "Load"}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Load tree from file</TooltipContent>
@@ -321,9 +359,16 @@ export function ImpactTreeApp() {
                      <Download className="h-4 w-4 mr-2" />
                      Export as JSON
                    </DropdownMenuItem>
-                   <DropdownMenuItem onClick={() => operations.handleExportPNG(canvasElement)}>
-                     <Download className="h-4 w-4 mr-2" />
-                     Export as PNG
+                   <DropdownMenuItem
+                     onClick={() => operations.handleExportPNG(canvasElement)}
+                     disabled={operations.isExporting}
+                   >
+                     {operations.isExporting ? (
+                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                     ) : (
+                       <Download className="h-4 w-4 mr-2" />
+                     )}
+                     {operations.isExporting ? "Exporting..." : "Export as PNG"}
                    </DropdownMenuItem>
                    <DropdownMenuItem onClick={operations.handleExportHTML}>
                      <Download className="h-4 w-4 mr-2" />
@@ -348,7 +393,12 @@ export function ImpactTreeApp() {
                 </TooltipContent>
               </Tooltip>
 
-              <HelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
+               {helpDialogOpen ? (
+                 <Suspense fallback={null}>
+                   <HelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
+                 </Suspense>
+               ) : null}
+
 
               <Separator orientation="vertical" className="h-8" />
 
@@ -363,19 +413,32 @@ export function ImpactTreeApp() {
             </div>
           </header>
 
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar */}
-            <Sidebar
-              tree={tree}
-              onTreeUpdate={setTree}
-              mode={mode}
-              onModeChange={setMode}
-              selectedNodeType={selectedNodeType}
-              onNodeTypeSelect={setSelectedNodeType}
-              nodes={nodes}
-              relationships={relationships}
-              measurements={measurements}
-            />
+          <div className="flex flex-1 overflow-hidden relative">
+            {/* Left Sidebar - hidden on small screens unless toggled */}
+            <div className={`${sidebarOpen ? "block" : "hidden"} md:block absolute md:relative z-30 h-full`}>
+              <Sidebar
+                tree={tree}
+                onTreeUpdate={setTree}
+                mode={mode}
+                onModeChange={setMode}
+                selectedNodeType={selectedNodeType}
+                onNodeTypeSelect={setSelectedNodeType}
+                nodes={nodes}
+                relationships={relationships}
+                measurements={measurements}
+              />
+            </div>
+
+            {/* Sidebar toggle button - visible on small screens */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-2 top-2 z-40 md:hidden h-8 w-8 bg-card/90 backdrop-blur-sm shadow-sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
 
             {/* Canvas */}
             <main className="flex-1 relative bg-muted/20 border-x">
@@ -401,29 +464,59 @@ export function ImpactTreeApp() {
                   onZoom={canvasOperations.handleZoom}
                />
 
-               {/* Canvas Controls */}
-               <CanvasControls
+               {/* Floating Toolbar */}
+               <FloatingToolbar
+                 treeName={tree.name}
+                 zoomLevel={viewBox.scale}
                  onZoomIn={() => canvasOperations.handleZoom(1.2)}
                  onZoomOut={() => canvasOperations.handleZoom(0.8)}
                  onResetView={canvasOperations.handleResetView}
                  onCenterView={canvasOperations.handleCenterView}
                />
+
+               {/* Node Action Card - appears when node is selected */}
+                {selectedNodeId && selectedNodeScreenPosition && nodes.get(selectedNodeId) && (
+                  <NodeActionCard
+                    node={nodes.get(selectedNodeId)!}
+                    measurements={measurements}
+                    nodePosition={selectedNodeScreenPosition}
+                    onDelete={nodeOperations.deleteNode}
+                    onStartConnect={handleStartConnectFromCard}
+                  />
+                )}
+
                </main>
 
-             {/* Right Panel */}
-             <PropertiesPanel
-               selectedNode={selectedNodeId ? nodes.get(selectedNodeId) : null}
-               selectedRelationship={
-                 selectedRelationshipId
-                   ? relationships.get(selectedRelationshipId)
-                   : null
-               }
-               measurements={measurements}
-               nodes={nodes}
-                onUpdateNode={nodeOperations.updateNode}
-                onDeleteNode={nodeOperations.deleteNode}
-               onAddMeasurement={handleAddMeasurement}
-             />
+             {/* Properties toggle button - visible on small screens */}
+             <Button
+               variant="ghost"
+               size="icon"
+               className="absolute right-2 top-2 z-40 md:hidden h-8 w-8 bg-card/90 backdrop-blur-sm shadow-sm"
+               onClick={() => setPropertiesOpen(!propertiesOpen)}
+               aria-label={propertiesOpen ? "Close properties" : "Open properties"}
+             >
+               <PanelRight className="h-4 w-4" />
+             </Button>
+
+             {/* Right Panel - hidden on small screens unless toggled */}
+             <div className={`${propertiesOpen ? "block" : "hidden"} md:block absolute md:relative right-0 z-30 h-full`}>
+               <PropertiesPanel
+                 selectedNode={selectedNodeId ? nodes.get(selectedNodeId) : null}
+                 selectedRelationship={
+                   selectedRelationshipId
+                     ? relationships.get(selectedRelationshipId)
+                     : null
+                 }
+                 measurements={measurements}
+                 nodes={nodes}
+                  onUpdateNode={nodeOperations.updateNode}
+                  onDeleteNode={nodeOperations.deleteNode}
+                 onAddMeasurement={handleAddMeasurement}
+                 onDeleteMeasurement={handleDeleteMeasurement}
+                 onReorderMeasurements={handleReorderMeasurements}
+                 onDeleteRelationship={handleDeleteRelationship}
+               />
+             </div>
            </div>
          </TooltipProvider>
       </div>
@@ -433,7 +526,22 @@ export function ImpactTreeApp() {
         {dragState.isDragging && dragState.activeNodeType ? (
           <div className="opacity-70 cursor-grabbing animate-pulse">
             <Badge
-              variant={getNodeTypeVariant(dragState.activeNodeType)}
+              variant={(() => {
+                // Gets the variant for a node type badge
+                const nodeType = dragState.activeNodeType;
+                switch (nodeType) {
+                  case "business_metric":
+                    return "default";
+                  case "product_metric":
+                    return "secondary";
+                  case "initiative_positive":
+                    return "outline";
+                  case "initiative_negative":
+                    return "destructive";
+                  default:
+                    return "default";
+                }
+              })()}
               className="shadow-lg transition-transform duration-150"
             >
               {getNodeTypeLabel(dragState.activeNodeType)}

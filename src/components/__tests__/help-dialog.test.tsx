@@ -12,8 +12,8 @@ describe("Help Dialog Functionality", () => {
     const helpButton = screen.getByRole("button", { name: /help/i });
     await user.click(helpButton);
 
-    // Check if help dialog is opened (look for dialog title)
-    expect(screen.getByText("Impact Tree Builder Help")).toBeInTheDocument();
+    // Help dialog is lazy-loaded; wait for it to render
+    expect(await screen.findByText("Impact Tree Builder Help")).toBeInTheDocument();
   });
 
   it("should display help content sections", async () => {
@@ -25,7 +25,7 @@ describe("Help Dialog Functionality", () => {
     await user.click(helpButton);
 
     // Check for main sections
-    expect(screen.getByText("Getting Started")).toBeInTheDocument();
+    expect(await screen.findByText("Getting Started")).toBeInTheDocument();
     expect(screen.getByText("Interface Overview")).toBeInTheDocument();
     expect(screen.getByText("Creating Your Impact Tree")).toBeInTheDocument();
     expect(screen.getByText("Keyboard Shortcuts")).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe("Help Dialog Functionality", () => {
     await user.click(helpButton);
 
     // Verify dialog is open
-    expect(screen.getByText("Impact Tree Builder Help")).toBeInTheDocument();
+    expect(await screen.findByText("Impact Tree Builder Help")).toBeInTheDocument();
 
     // Find and click close button (X button)
     const closeButton = screen.getByRole("button", { name: /close/i });

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import type { ImpactTree, Node, Relationship, Measurement, ViewBox } from "@/types";
 import type { NodeType } from "@/types/drag";
 import { exportAsJSON, exportAsPNG, exportAsHTML } from "@/lib/export-utils";
+import { DEFAULT_VIEW_BOX as DEFAULT_VIEW_BOX_CONSTANT } from "@/lib/constants";
 import { validateImportedData } from "@/lib/validation-utils";
 import { sampleData } from "@/data/sampleData";
 import { toast } from "@/hooks/use-toast";
@@ -44,6 +45,8 @@ export interface ImpactTreeOperations {
   handleImport: () => void;
   handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
+  isExporting: boolean;
+  isImporting: boolean;
 }
 
 export interface UseImpactTreeStateReturn {
@@ -52,13 +55,7 @@ export interface UseImpactTreeStateReturn {
   operations: ImpactTreeOperations;
 }
 
-const DEFAULT_VIEW_BOX: ViewBox = {
-  x: 0,
-  y: 0,
-  width: 1200,
-  height: 800,
-  scale: 1,
-};
+const DEFAULT_VIEW_BOX: ViewBox = DEFAULT_VIEW_BOX_CONSTANT;
 
 /**
  * Creates a new tree with current date and default metadata
@@ -115,6 +112,10 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
   // File input ref for import functionality
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Loading states
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
   /**
    * Resets all state for a new tree
    */
@@ -168,6 +169,7 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
    */
   const handleExportPNG = useCallback(
     async (canvasElement: SVGSVGElement | null) => {
+      setIsExporting(true);
       try {
         await exportAsPNG(tree, canvasElement);
       } catch (error) {
@@ -177,6 +179,8 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
           description: "Failed to export as PNG. Please try again.",
           variant: "destructive",
         });
+      } finally {
+        setIsExporting(false);
       }
     },
     [tree]
@@ -213,6 +217,7 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
         return;
       }
 
+      setIsImporting(true);
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
@@ -246,10 +251,13 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
             description: `Failed to parse JSON file: ${error instanceof Error ? error.message : "Unknown error"}`,
             variant: "destructive",
           });
+        } finally {
+          setIsImporting(false);
         }
       };
 
       reader.onerror = () => {
+        setIsImporting(false);
         toast({
           title: "File read error",
           description: "Failed to read the file. Please try again.",
@@ -297,6 +305,8 @@ export function useImpactTreeState(): UseImpactTreeStateReturn {
       handleImport,
       handleFileSelect,
       fileInputRef,
+      isExporting,
+      isImporting,
     },
   };
 }

@@ -54,30 +54,35 @@ export function useNodeOperations(
           color: "#2E7D32",
           shape: "rectangle" as const,
           level: 1,
+          defaultName: "New Business Metric",
         };
       case "product_metric":
         return {
           color: "#1976D2",
           shape: "rectangle" as const,
           level: 2,
+          defaultName: "New Product Metric",
         };
       case "initiative_positive":
         return {
           color: "#FF6F00",
           shape: "ellipse" as const,
           level: 3,
+          defaultName: "New Initiative",
         };
       case "initiative_negative":
         return {
           color: "#D32F2F",
           shape: "ellipse" as const,
           level: 3,
+          defaultName: "New Risk",
         };
       default:
         return {
           color: "#1976D2",
           shape: "rectangle" as const,
           level: 2,
+          defaultName: "New Node",
         };
     }
   };
@@ -113,15 +118,13 @@ export function useNodeOperations(
       timestamp: now,
     };
 
-    const { color, shape, level } = getNodeProperties(typeToUse);
+    const { color, shape, level, defaultName } = getNodeProperties(typeToUse);
 
     const newNode: Node = {
       id: nodeId,
-      name: "New Node",
+      name: defaultName,
       description: "",
-      node_type: typeToUse
-        .replace("_positive", "")
-        .replace("_negative", "") as Node["node_type"],
+      node_type: typeToUse as Node["node_type"],
       level,
       position_x: x,
       position_y: y,
@@ -262,24 +265,26 @@ export function getRelationshipTypeAndColor(sourceNode: Node): {
   relationshipType: Relationship["relationship_type"];
   color: string;
 } {
-  const sourceColor = sourceNode.color;
-
   let relationshipType: Relationship["relationship_type"];
   let color: string;
 
-  // Determine relationship type based on source node level
-  switch (sourceNode.level) {
-    case 1: // Business metrics drive product metrics
+  // Determine relationship type based on source node type
+  switch (sourceNode.node_type) {
+    case "business_metric":
       relationshipType = "desirable_effect";
       color = "#4CAF50"; // Green for positive effect
       break;
-    case 2: // Product metrics drive initiatives
+    case "product_metric":
       relationshipType = "desirable_effect";
       color = "#2196F3"; // Blue for product to initiative
       break;
-    case 3: // Initiatives can have both effects
-      relationshipType = "rollup";
-      color = sourceColor; // Use source node color
+    case "initiative_positive":
+      relationshipType = "desirable_effect";
+      color = "#8B5CF6"; // Purple for positive initiative
+      break;
+    case "initiative_negative":
+      relationshipType = "undesirable_effect";
+      color = "#EF4444"; // Red for negative initiative
       break;
     default:
       relationshipType = "desirable_effect";

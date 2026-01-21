@@ -1,6 +1,14 @@
 import { useRef, useState, useMemo, useCallback, memo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import type { Node, Relationship, Measurement } from "@/types";
+import {
+  CANVAS_BACKGROUND,
+  CANVAS_INTERACTION,
+  CONNECTION_CURVE,
+  EMPTY_STATE,
+  NODE_DIMENSIONS,
+  RELATIONSHIP_RENDERING,
+} from "@/lib/constants";
 import { screenToCanvasCoordinates } from "@/lib/drag-utils";
 
 /**
@@ -24,7 +32,8 @@ function getCursorClass(
   isConnectDragging: boolean
 ): string {
   if (isPanning) return CURSOR_CLASSES.panning;
-  if (mode === "connect" && isConnectDragging) return CURSOR_CLASSES.connectDragging;
+  if (mode === "connect" && isConnectDragging)
+    return CURSOR_CLASSES.connectDragging;
   if (mode === "connect") return CURSOR_CLASSES.connect;
   if (mode === "add-node") return CURSOR_CLASSES.addNode;
   if (mode === "select") return CURSOR_CLASSES.select;
@@ -32,14 +41,90 @@ function getCursorClass(
 }
 
 /**
- * Marker ID lookup for relationship types
+ * Node type colors for gradient rings
  */
-const MARKER_MAP: Record<string, string> = {
-  desirable_effect: "url(#arrowhead-green)",
-  undesirable_effect: "url(#arrowhead-red)",
-} as const;
+const NODE_COLORS: Record<
+  string,
+  { primary: string; secondary: string; glow: string }
+> = {
+  business_metric: {
+    primary: "#3B82F6",
+    secondary: "#06B6D4",
+    glow: "rgba(59, 130, 246, 0.4)",
+  },
+  product_metric: {
+    primary: "#10B981",
+    secondary: "#22C55E",
+    glow: "rgba(16, 185, 129, 0.4)",
+  },
+  // Initiative types: "initiative" is the base type stored in data,
+  // while "initiative_positive" and "initiative_negative" are display variants.
+  // Both "initiative" and "initiative_positive" share the same purple color scheme.
+  initiative: {
+    primary: "#8B5CF6",
+    secondary: "#A855F7",
+    glow: "rgba(139, 92, 246, 0.4)",
+  },
+  initiative_positive: {
+    primary: "#8B5CF6",
+    secondary: "#A855F7",
+    glow: "rgba(139, 92, 246, 0.4)",
+  },
+  initiative_negative: {
+    primary: "#EF4444",
+    secondary: "#F87171",
+    glow: "rgba(239, 68, 68, 0.4)",
+  },
+};
 
-const DEFAULT_MARKER = "url(#arrowhead-blue)";
+/**
+ * Get node colors based on type
+ */
+function getNodeColors(nodeType: string) {
+  if (nodeType.startsWith("initiative")) {
+    return NODE_COLORS[nodeType] || NODE_COLORS.initiative;
+  }
+  return NODE_COLORS[nodeType] || NODE_COLORS.business_metric;
+}
+
+/**
+ * Calculate bezier curve control points for a smooth connection line
+ */
+function calculateBezierPath(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+): string {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  // Control point offset based on distance
+  const offset = Math.min(
+    distance * CONNECTION_CURVE.controlPointDistanceFactor,
+    CONNECTION_CURVE.maxControlPointOffset
+  );
+
+  // Determine curve direction based on relative positions
+  let cx1, cy1, cx2, cy2;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    // More horizontal - curve vertically
+    cx1 = x1 + offset;
+    cy1 = y1;
+    cx2 = x2 - offset;
+    cy2 = y2;
+  } else {
+    // More vertical - curve horizontally
+    cx1 = x1;
+    cy1 = y1 + (dy > 0 ? offset : -offset);
+    cx2 = x2;
+    cy2 = y2 + (dy > 0 ? -offset : offset);
+  }
+
+  return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+}
 
 interface ImpactCanvasProps {
   nodes: Map<string, Node>;
@@ -69,6 +154,11 @@ interface ImpactCanvasProps {
   onZoom?: (factor: number, centerX: number, centerY: number) => void;
 }
 
+// Node size constants
+const NODE_RADIUS = NODE_DIMENSIONS.radius;
+const NODE_RING_WIDTH = NODE_DIMENSIONS.ringWidth;
+const NODE_OUTER_RADIUS = NODE_RADIUS + NODE_RING_WIDTH;
+
 export const ImpactCanvas = memo(function ImpactCanvas({
   nodes,
   relationships,
@@ -92,7 +182,6 @@ export const ImpactCanvas = memo(function ImpactCanvas({
 }: ImpactCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Configure drop zone for @dnd-kit drag-and-drop
   const { setNodeRef } = useDroppable({
     id: "canvas-drop-zone",
   });
@@ -104,7 +193,6 @@ export const ImpactCanvas = memo(function ImpactCanvas({
     startY: number;
   }>({ isDragging: false, nodeId: null, startX: 0, startY: 0 });
 
-  // State for tracking relationship creation via drag
   const [connectDragState, setConnectDragState] = useState<{
     isDragging: boolean;
     sourceNodeId: string | null;
@@ -119,7 +207,6 @@ export const ImpactCanvas = memo(function ImpactCanvas({
     hoveredNodeId: null,
   });
 
-  // State for tracking canvas panning
   const [panState, setPanState] = useState<{
     isPanning: boolean;
     startX: number;
@@ -128,18 +215,13 @@ export const ImpactCanvas = memo(function ImpactCanvas({
 
   const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
-
-    // Prevent click from firing if a node drag just completed
-    // (drag drop triggers both drag end AND click, causing duplicates)
     if (isDraggingNode) return;
 
-    // Prevent clicks within 150ms of drag ending (cooldown period)
     const timeSinceDragEnd = Date.now() - lastDragEndTime;
-    if (timeSinceDragEnd < 150) {
+    if (timeSinceDragEnd < CANVAS_INTERACTION.clickAfterDragIgnoreMs) {
       return;
     }
 
-    // Transform screen coordinates to canvas coordinates
     const { x, y } = screenToCanvasCoordinates(
       { x: e.clientX, y: e.clientY },
       svgRef.current,
@@ -195,12 +277,14 @@ export const ImpactCanvas = memo(function ImpactCanvas({
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
-    // Only allow panning in select mode and when not already dragging
-    if (mode !== "select" || dragState.isDragging || connectDragState.isDragging) {
+    if (
+      mode !== "select" ||
+      dragState.isDragging ||
+      connectDragState.isDragging
+    ) {
       return;
     }
 
-    // Check if clicking on empty canvas (not on nodes or relationships)
     const target = e.target as SVGElement;
     const nodeElement = target.closest("[data-node-id]");
     const relElement = target.closest("[data-relationship-id]");
@@ -217,10 +301,13 @@ export const ImpactCanvas = memo(function ImpactCanvas({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (panState.isPanning && svgRef.current && onPan) {
-      // Handle canvas panning
       const rect = svgRef.current.getBoundingClientRect();
-      const deltaX = (e.clientX - panState.startX) * (viewBox.width / rect.width / viewBox.scale);
-      const deltaY = (e.clientY - panState.startY) * (viewBox.height / rect.height / viewBox.scale);
+      const deltaX =
+        (e.clientX - panState.startX) *
+        (viewBox.width / rect.width / viewBox.scale);
+      const deltaY =
+        (e.clientY - panState.startY) *
+        (viewBox.height / rect.height / viewBox.scale);
 
       onPan(deltaX, deltaY);
 
@@ -252,14 +339,12 @@ export const ImpactCanvas = memo(function ImpactCanvas({
         startY: e.clientY,
       }));
     } else if (connectDragState.isDragging) {
-      // Check if hovering over a node
       const target = e.target as SVGElement;
       const nodeElement = target.closest("[data-node-id]");
       const hoveredNodeId = nodeElement
         ? nodeElement.getAttribute("data-node-id")
         : null;
 
-      // Update cursor position for connect mode drag
       setConnectDragState((prev) => ({
         ...prev,
         currentX: e.clientX,
@@ -271,11 +356,9 @@ export const ImpactCanvas = memo(function ImpactCanvas({
   };
 
   const handleMouseUp = () => {
-    // Reset pan state
     setPanState({ isPanning: false, startX: 0, startY: 0 });
 
     if (connectDragState.isDragging && connectDragState.sourceNodeId) {
-      // Use hoveredNodeId from state which is more reliable than checking event target
       const targetNodeId = connectDragState.hoveredNodeId;
 
       if (
@@ -283,7 +366,6 @@ export const ImpactCanvas = memo(function ImpactCanvas({
         targetNodeId !== connectDragState.sourceNodeId &&
         onCreateRelationship
       ) {
-        // Create relationship directly via callback instead of using click handler
         onCreateRelationship(connectDragState.sourceNodeId, targetNodeId);
       }
 
@@ -304,41 +386,29 @@ export const ImpactCanvas = memo(function ImpactCanvas({
 
     e.preventDefault();
 
-    // Calculate zoom factor from deltaY (negative = zoom in, positive = zoom out)
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    const zoomFactor =
+      e.deltaY > 0 ? CANVAS_INTERACTION.zoomOutFactor : CANVAS_INTERACTION.zoomInFactor;
 
-    // Get mouse position relative to canvas
     const rect = svgRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // Transform mouse position to canvas coordinates
     const canvasX = mouseX * (viewBox.width / rect.width) + viewBox.x;
     const canvasY = mouseY * (viewBox.height / rect.height) + viewBox.y;
 
-    // Apply zoom centered on mouse position
     onZoom(zoomFactor, canvasX, canvasY);
   };
 
-  // Memoize truncateText to avoid recreating on each render
-  const truncateText = useCallback((text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength - 3) + "...";
-  }, []);
-
-  // Memoize performance calculations for all nodes to avoid O(n*m) on each render
   const nodePerformanceMap = useMemo(() => {
     const performanceMap = new Map<string, boolean | null>();
     const measurementsByNode = new Map<string, Measurement[]>();
 
-    // Group measurements by node
     measurements.forEach((m) => {
       const existing = measurementsByNode.get(m.node_id) || [];
       existing.push(m);
       measurementsByNode.set(m.node_id, existing);
     });
 
-    // Calculate performance for each node
     nodes.forEach((_, nodeId) => {
       const nodeMeasurements = measurementsByNode.get(nodeId);
       if (!nodeMeasurements || nodeMeasurements.length === 0) {
@@ -346,10 +416,20 @@ export const ImpactCanvas = memo(function ImpactCanvas({
         return;
       }
 
+      // Filter out measurements with zero expected_value to avoid division by zero
+      const validMeasurements = nodeMeasurements.filter(
+        (meas) => meas.expected_value !== 0
+      );
+
+      if (validMeasurements.length === 0) {
+        performanceMap.set(nodeId, null);
+        return;
+      }
+
       const avgPerformance =
-        nodeMeasurements.reduce((sum, meas) => {
+        validMeasurements.reduce((sum, meas) => {
           return sum + Math.abs(meas.actual_value / meas.expected_value);
-        }, 0) / nodeMeasurements.length;
+        }, 0) / validMeasurements.length;
 
       performanceMap.set(nodeId, avgPerformance >= 0.8);
     });
@@ -357,22 +437,46 @@ export const ImpactCanvas = memo(function ImpactCanvas({
     return performanceMap;
   }, [nodes, measurements]);
 
-  // Simple lookup function using memoized map
-  const getNodePerformance = useCallback((nodeId: string) => {
-    return nodePerformanceMap.get(nodeId) ?? null;
-  }, [nodePerformanceMap]);
+  const getNodePerformance = useCallback(
+    (nodeId: string) => {
+      return nodePerformanceMap.get(nodeId) ?? null;
+    },
+    [nodePerformanceMap]
+  );
+
+  // Get unique node types for gradient definitions
+  const nodeTypes = useMemo(() => {
+    const types = new Set<string>();
+    nodes.forEach((node) => types.add(node.node_type));
+    return Array.from(types);
+  }, [nodes]);
 
   return (
-    <div className="w-full h-full bg-muted/10 relative">
+    <div className="w-full h-full bg-background relative">
       {nodes.size === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center bg-card p-8 rounded-lg border shadow-lg max-w-md">
-            <p className="text-muted-foreground mb-2">
-              👈 Select a node type from the left sidebar and click here to add
-              it
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Click nodes to select them, drag to move, use toolbar to manage
+          <div className="text-center p-8 max-w-md">
+            <div
+              className="rounded-2xl bg-gradient-to-br from-primary to-primary/60 mx-auto mb-4 flex items-center justify-center shadow-lg"
+              style={{
+                width: EMPTY_STATE.iconSize * 4,
+                height: EMPTY_STATE.iconSize * 4,
+              }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                className="w-8 h-8"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Start Building</h3>
+            <p className="text-muted-foreground text-sm">
+              Select a node type from the sidebar and click here to add it to
+              your impact tree
             </p>
           </div>
         </div>
@@ -389,9 +493,7 @@ export const ImpactCanvas = memo(function ImpactCanvas({
           mode,
           connectDragState.isDragging
         )}`}
-        viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width / viewBox.scale} ${
-          viewBox.height / viewBox.scale
-        }`}
+        viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width / viewBox.scale} ${viewBox.height / viewBox.scale}`}
         onClick={handleCanvasClick}
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleMouseMove}
@@ -400,97 +502,187 @@ export const ImpactCanvas = memo(function ImpactCanvas({
         onWheel={handleWheel}
       >
         <defs>
+          {/* Gradient definitions for each node type */}
+          {nodeTypes.map((type) => {
+            const colors = getNodeColors(type);
+            return (
+              <linearGradient
+                key={`gradient-${type}`}
+                id={`node-gradient-${type}`}
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop offset="0%" stopColor={colors.primary} />
+                <stop offset="100%" stopColor={colors.secondary} />
+              </linearGradient>
+            );
+          })}
+
+          {/* Glow filter for selected nodes */}
+          <filter
+            id="glow"
+            x="-50%"
+            y="-50%"
+            width="200%"
+            height="200%"
+          >
+              <feGaussianBlur
+                stdDeviation={NODE_DIMENSIONS.ringWidth}
+                result="coloredBlur"
+              />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          {/* Arrow markers for relationships */}
           <marker
             id="arrowhead-green"
-            markerWidth="10"
-            markerHeight="7"
-            refX="9"
-            refY="3.5"
+            markerWidth="8"
+            markerHeight="6"
+            refX="7"
+            refY="3"
             orient="auto"
           >
-            <polygon points="0 0, 10 3.5, 0 7" fill="#4CAF50" />
+            <path
+              d="M0 0 L8 3 L0 6 L2 3 Z"
+              fill="#10B981"
+              className="opacity-80"
+            />
           </marker>
           <marker
             id="arrowhead-red"
-            markerWidth="10"
-            markerHeight="7"
-            refX="9"
-            refY="3.5"
+            markerWidth="8"
+            markerHeight="6"
+            refX="7"
+            refY="3"
             orient="auto"
           >
-            <polygon points="0 0, 10 3.5, 0 7" fill="#F44336" />
+            <path
+              d="M0 0 L8 3 L0 6 L2 3 Z"
+              fill="#EF4444"
+              className="opacity-80"
+            />
           </marker>
           <marker
             id="arrowhead-blue"
-            markerWidth="10"
-            markerHeight="7"
-            refX="9"
-            refY="3.5"
+            markerWidth="8"
+            markerHeight="6"
+            refX="7"
+            refY="3"
             orient="auto"
           >
-            <polygon points="0 0, 10 3.5, 0 7" fill="#2196F3" />
-          </marker>
-        </defs>
-
-        {/* Background */}
-        <rect
-          x={viewBox.x}
-          y={viewBox.y}
-          width={viewBox.width / viewBox.scale}
-          height={viewBox.height / viewBox.scale}
-          className="fill-muted/10"
-        />
-
-        {/* Grid pattern for better visual reference */}
-        <defs>
-          <pattern
-            id="grid"
-            width="50"
-            height="50"
-            patternUnits="userSpaceOnUse"
-          >
             <path
-              d="M 50 0 L 0 0 0 50"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.5"
-              className="stroke-muted/20"
+              d="M0 0 L8 3 L0 6 L2 3 Z"
+              fill="#3B82F6"
+              className="opacity-80"
             />
+          </marker>
+
+          {/* Subtle grid pattern */}
+            <pattern
+              id="grid"
+              width={CANVAS_BACKGROUND.gridSize}
+              height={CANVAS_BACKGROUND.gridSize}
+              patternUnits="userSpaceOnUse"
+            >
+              <circle
+                cx={CANVAS_BACKGROUND.gridDotOffset}
+                cy={CANVAS_BACKGROUND.gridDotOffset}
+                r={CANVAS_BACKGROUND.gridDotRadius}
+                fill="currentColor"
+                className="fill-border/30"
+              />
           </pattern>
         </defs>
+
+        {/* 
+          Background and Grid: Large fixed dimensions for infinite canvas effect
+          
+          The 10000x10000 pixel dimensions provide a generous panning area centered
+          around the current viewport position. This creates an "infinite canvas" 
+          feel without the overhead of dynamically generating background tiles.
+          
+          Performance considerations:
+          - These are simple SVG rectangles with minimal rendering cost
+          - The pattern reuses a single 40x40 grid definition via SVG patterns
+          - The browser only renders what's visible in the viewport
+          - Testing on various devices has shown no performance degradation
+          
+          The dimensions are intentionally large (±5000px from viewport center) to 
+          prevent users from seeing the canvas edge during normal panning operations.
+        */}
         <rect
-          x={viewBox.x}
-          y={viewBox.y}
-          width={viewBox.width / viewBox.scale}
-          height={viewBox.height / viewBox.scale}
+          x={viewBox.x - CANVAS_BACKGROUND.backgroundPadding}
+          y={viewBox.y - CANVAS_BACKGROUND.backgroundPadding}
+          width={CANVAS_BACKGROUND.backgroundSize}
+          height={CANVAS_BACKGROUND.backgroundSize}
+          className="fill-background"
+        />
+
+        <rect
+          x={viewBox.x - CANVAS_BACKGROUND.backgroundPadding}
+          y={viewBox.y - CANVAS_BACKGROUND.backgroundPadding}
+          width={CANVAS_BACKGROUND.backgroundSize}
+          height={CANVAS_BACKGROUND.backgroundSize}
           fill="url(#grid)"
         />
 
-        {/* Relationships */}
+        {/* Relationships (curved lines) */}
         <g>
           {Array.from(relationships.values()).map((rel) => {
             const sourceNode = nodes.get(rel.source_node_id);
             const targetNode = nodes.get(rel.target_node_id);
             if (!sourceNode || !targetNode) return null;
 
-            const markerEnd = MARKER_MAP[rel.relationship_type] || DEFAULT_MARKER;
+            const markerEnd =
+              rel.relationship_type === "desirable_effect"
+                ? "url(#arrowhead-green)"
+                : rel.relationship_type === "undesirable_effect"
+                  ? "url(#arrowhead-red)"
+                  : "url(#arrowhead-blue)";
+
+            const strokeColor =
+              rel.relationship_type === "desirable_effect"
+                ? "#10B981"
+                : rel.relationship_type === "undesirable_effect"
+                  ? "#EF4444"
+                  : "#3B82F6";
+
+            const isSelected = selectedRelationshipId === rel.id;
+
+            // Calculate bezier path
+            const path = calculateBezierPath(
+              sourceNode.position_x,
+              sourceNode.position_y,
+              targetNode.position_x,
+              targetNode.position_y
+            );
 
             return (
-              <line
-                key={rel.id}
-                data-relationship-id={rel.id}
-                x1={sourceNode.position_x}
-                y1={sourceNode.position_y}
-                x2={targetNode.position_x}
-                y2={targetNode.position_y}
-                stroke={rel.color}
-                strokeWidth={selectedRelationshipId === rel.id ? 4 : 2}
-                strokeDasharray={
-                  selectedRelationshipId === rel.id ? "5,5" : "none"
-                }
-                markerEnd={markerEnd}
-                className="cursor-pointer transition-all hover:opacity-80"
-              />
+              <g key={rel.id} data-relationship-id={rel.id}>
+                {/* Hover/selection area (wider invisible path) */}
+                <path
+                  d={path}
+                  stroke="transparent"
+                  strokeWidth={RELATIONSHIP_RENDERING.hitAreaStrokeWidth}
+                  fill="none"
+                  className="cursor-pointer"
+                />
+                {/* Visible path */}
+                <path
+                  d={path}
+                  stroke={strokeColor}
+                  strokeWidth={isSelected ? 3 : 2}
+                  strokeOpacity={isSelected ? 1 : 0.6}
+                  fill="none"
+                  markerEnd={markerEnd}
+                  className="cursor-pointer"
+                />
+              </g>
             );
           })}
 
@@ -502,7 +694,6 @@ export const ImpactCanvas = memo(function ImpactCanvas({
               const sourceNode = nodes.get(connectDragState.sourceNodeId);
               if (!sourceNode) return null;
 
-              // If hovering over a target node, snap to its center
               let endX, endY;
               if (connectDragState.hoveredNodeId) {
                 const targetNode = nodes.get(connectDragState.hoveredNodeId);
@@ -512,7 +703,6 @@ export const ImpactCanvas = memo(function ImpactCanvas({
                 }
               }
 
-              // Otherwise, use cursor position
               if (endX === undefined || endY === undefined) {
                 const rect = svgRef.current.getBoundingClientRect();
                 endX =
@@ -525,30 +715,40 @@ export const ImpactCanvas = memo(function ImpactCanvas({
                   viewBox.y;
               }
 
+              const path = calculateBezierPath(
+                sourceNode.position_x,
+                sourceNode.position_y,
+                endX,
+                endY
+              );
+
               return (
-                <line
-                  x1={sourceNode.position_x}
-                  y1={sourceNode.position_y}
-                  x2={endX}
-                  y2={endY}
+                <path
+                  d={path}
                   stroke={
-                    connectDragState.hoveredNodeId ? "#4CAF50" : "#FF6F00"
+                    connectDragState.hoveredNodeId ? "#10B981" : "#8B5CF6"
                   }
                   strokeWidth={2}
-                  strokeDasharray="5,5"
-                  opacity={0.6}
+                  strokeDasharray={RELATIONSHIP_RENDERING.previewDashArray}
+                  fill="none"
+                  opacity={0.8}
                   pointerEvents="none"
                 />
               );
             })()}
         </g>
 
-        {/* Nodes */}
+        {/* Nodes (circular with gradient rings) */}
         <g>
           {Array.from(nodes.values()).map((node) => {
             const hasPerformance = getNodePerformance(node.id);
             const isConnectSource =
               mode === "connect" && connectSourceNodeId === node.id;
+            const isSelected = selectedNodeId === node.id;
+            const isHovered =
+              connectDragState.isDragging &&
+              connectDragState.hoveredNodeId === node.id;
+            const colors = getNodeColors(node.node_type);
 
             return (
               <g
@@ -558,78 +758,96 @@ export const ImpactCanvas = memo(function ImpactCanvas({
                 className={`cursor-pointer ${
                   dragState.isDragging && dragState.nodeId === node.id
                     ? ""
-                    : "transition-all duration-200"
-                } ${
-                  connectDragState.isDragging &&
-                  connectDragState.hoveredNodeId === node.id
-                    ? "animate-pulse"
-                    : ""
+                    : "transition-transform duration-150"
                 }`}
                 onMouseDown={(e) => handleMouseDown(e, node.id)}
+                filter={isSelected ? "url(#glow)" : undefined}
               >
-                {node.shape === "ellipse" ? (
-                  <ellipse
-                    cx={0}
-                    cy={0}
-                    rx={60}
-                    ry={35}
-                    fill={node.color}
-                    stroke={
-                      selectedNodeId === node.id
-                        ? "hsl(var(--primary))"
-                        : isConnectSource
-                        ? "#FF6F00"
-                        : "#fff"
-                    }
-                    strokeWidth={
-                      selectedNodeId === node.id || isConnectSource ? 3 : 1
-                    }
-                    className="transition-all hover:brightness-110"
-                  />
-                ) : (
-                  <rect
-                    x={-75}
-                    y={-25}
-                    width={150}
-                    height={50}
-                    rx={8}
-                    fill={node.color}
-                    stroke={
-                      selectedNodeId === node.id
-                        ? "hsl(var(--primary))"
-                        : isConnectSource
-                        ? "#FF6F00"
-                        : "#fff"
-                    }
-                    strokeWidth={
-                      selectedNodeId === node.id || isConnectSource ? 3 : 1
-                    }
-                    className="transition-all hover:brightness-110"
-                  />
+                {/* Selection ring (animated) */}
+                {isSelected && (
+                    <circle
+                      r={NODE_OUTER_RADIUS + NODE_DIMENSIONS.selectionRingPadding}
+                      fill="none"
+                      stroke={colors.primary}
+                      strokeWidth={2}
+                      strokeDasharray={RELATIONSHIP_RENDERING.selectionDashArray}
+                      opacity={0.6}
+                      className="animate-spin"
+                      style={{ animationDuration: "8s" }}
+                    />
                 )}
 
-                <text
-                  x={0}
-                  y={0}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fill="white"
-                  fontSize="12"
-                  fontWeight="500"
-                  className="pointer-events-none select-none"
-                  style={{ textShadow: "1px 1px 1px rgba(0,0,0,0.5)" }}
-                >
-                  {truncateText(node.name, 20)}
-                </text>
+                {/* Outer glow for hover/connect */}
+                {(isHovered || isConnectSource) && (
+                    <circle
+                      r={NODE_OUTER_RADIUS + NODE_DIMENSIONS.hoverGlowPadding}
+                      fill={isHovered ? "#10B981" : "#8B5CF6"}
+                      opacity={0.2}
+                    />
+                )}
 
+                {/* Gradient ring */}
+                <circle
+                  r={NODE_OUTER_RADIUS}
+                  fill={`url(#node-gradient-${node.node_type})`}
+                  className="transition-all duration-200"
+                />
+
+                {/* Inner white circle */}
+                <circle
+                  r={NODE_RADIUS}
+                  fill="white"
+                  className="dark:fill-gray-900"
+                />
+
+                {/* Icon */}
+                <g
+                  transform="translate(-8, -8) scale(1)"
+                  stroke={colors.primary}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                >
+                  {node.node_type === "business_metric" && (
+                    <path d="M2 12 L6 8 L10 10 L14 6 M14 6 V10 M14 6 H10" />
+                  )}
+                  {node.node_type === "product_metric" && (
+                    <>
+                      <rect x="3" y="10" width="3" height="6" rx="1" fill={colors.primary} />
+                      <rect x="7" y="6" width="3" height="10" rx="1" fill={colors.primary} />
+                      <rect x="11" y="2" width="3" height="14" rx="1" fill={colors.primary} />
+                    </>
+                  )}
+                  {node.node_type.startsWith("initiative") && (
+                    <>
+                      <path d="M8 2 L8 0 M12 8 C12 11 10 14 8 14 S4 11 4 8 C4 4.5 6 2 8 2 S12 4.5 12 8" />
+                      <path d="M6 16 L10 16 M7 18 L9 18" strokeWidth={1.5} />
+                    </>
+                  )}
+                </g>
+
+                {/* Performance indicator */}
                 {hasPerformance !== null && (
                   <circle
-                    cx={node.shape === "ellipse" ? 45 : 60}
-                    cy={node.shape === "ellipse" ? -25 : -15}
-                    r={4}
-                    fill={hasPerformance ? "#4CAF50" : "#F44336"}
+                    cx={NODE_RADIUS - NODE_DIMENSIONS.performanceIndicatorOffset}
+                    cy={-NODE_RADIUS + NODE_DIMENSIONS.performanceIndicatorOffset}
+                    r={NODE_DIMENSIONS.performanceIndicatorRadius}
+                    fill={hasPerformance ? "#10B981" : "#EF4444"}
+                    stroke="white"
+                    strokeWidth={NODE_DIMENSIONS.performanceIndicatorStrokeWidth}
                   />
                 )}
+
+                {/* Label */}
+                <text
+                  y={NODE_OUTER_RADIUS + 16}
+                  textAnchor="middle"
+                  className="fill-foreground text-xs font-medium pointer-events-none select-none"
+                  style={{ fontSize: "11px" }}
+                >
+                  {node.name}
+                </text>
               </g>
             );
           })}
