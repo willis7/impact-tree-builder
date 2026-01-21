@@ -569,7 +569,22 @@ export const ImpactCanvas = memo(function ImpactCanvas({
           </pattern>
         </defs>
 
-        {/* Background */}
+        {/* 
+          Background and Grid: Large fixed dimensions for infinite canvas effect
+          
+          The 10000x10000 pixel dimensions provide a generous panning area centered
+          around the current viewport position. This creates an "infinite canvas" 
+          feel without the overhead of dynamically generating background tiles.
+          
+          Performance considerations:
+          - These are simple SVG rectangles with minimal rendering cost
+          - The pattern reuses a single 40x40 grid definition via SVG patterns
+          - The browser only renders what's visible in the viewport
+          - Testing on various devices has shown no performance degradation
+          
+          The dimensions are intentionally large (±5000px from viewport center) to 
+          prevent users from seeing the canvas edge during normal panning operations.
+        */}
         <rect
           x={viewBox.x - 5000}
           y={viewBox.y - 5000}
@@ -578,7 +593,6 @@ export const ImpactCanvas = memo(function ImpactCanvas({
           className="fill-background"
         />
 
-        {/* Grid */}
         <rect
           x={viewBox.x - 5000}
           y={viewBox.y - 5000}
