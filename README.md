@@ -2,6 +2,8 @@
 
 A fully-featured impact tree visualization tool built with React, TypeScript, Vite, Tailwind CSS, and shadcn-ui.
 
+![Impact Tree Builder V2](docs/img/impact-tree-builder-v2.png)
+
 ## 🚀 Tech Stack
 
 - **Vite** - Next-generation frontend tooling
@@ -10,6 +12,7 @@ A fully-featured impact tree visualization tool built with React, TypeScript, Vi
 - **Tailwind CSS** - Utility-first CSS framework
 - **shadcn-ui** - Beautiful, accessible component library
 - **Lucide React** - Modern icon set
+
 
 ## ✨ Features
 
